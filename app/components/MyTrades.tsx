@@ -406,7 +406,7 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
               functionName: 'cancelTrade',
               args: [BigInt(trade.blockchainTradeId)],
               account: address as `0x${string}`,
-              chain: monadTestnet
+              chain: sepoliaTestnet
             })
           } else {
             console.log('❌ Declining trade on blockchain (user is responder)')
@@ -416,7 +416,7 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
               functionName: 'declineTrade',
               args: [BigInt(trade.blockchainTradeId)],
               account: address as `0x${string}`,
-              chain: monadTestnet
+              chain: sepoliaTestnet
             })
           }
 
@@ -506,7 +506,7 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
                 functionName: 'cancelTrade',
                 args: [BigInt(trade.blockchainTradeId)],
                 account: address as `0x${string}`,
-                chain: monadTestnet
+                chain: sepoliaTestnet
               })
 
               console.log(`📝 Blockchain transaction sent for trade ${trade.id}:`, hash)
@@ -601,7 +601,7 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
                 functionName: 'declineTrade',
                 args: [BigInt(trade.blockchainTradeId)],
                 account: address as `0x${string}`,
-                chain: monadTestnet
+                chain: sepoliaTestnet
               })
 
               console.log(`📝 Blockchain transaction sent for trade ${trade.id}:`, hash)
