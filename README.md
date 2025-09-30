@@ -65,7 +65,7 @@ NEXT_PUBLIC_ME_API_KEY=your-magic-eden-api-key
 npm run dev
 ```
 
-Visit **http://localhost:3000** to see the application.
+Visit **https://zamanfttrading.vercel.app/swap** to see the application.
 
 ---
 
