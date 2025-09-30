@@ -1,13 +1,6 @@
-# 0xDTrade - Monad NFT Trading Platform
+NFT Trading Platform
 
-A decentralized NFT trading platform built on Monad testnet.
-
-## 🚀 Features
-
-- **NFT Trading**: Create and accept trades with multiple NFTs
-- **Verified Collections**: Support for verified NFT collections on Monad
-- **Real-time Updates**: Live trade status updates
-- **Secure Transactions**: Smart contract-based trading with approval system
+A decentralized NFT trading platform built on Zama
 
 ## 🛠️ Setup Instructions
 
@@ -29,10 +22,6 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
-
-# Magic Eden API (server-side only - keep this secret!)
-MAGIC_EDEN_API_KEY=your-magic-eden-api-key
-```
 
 ### 3. Get API Keys
 
