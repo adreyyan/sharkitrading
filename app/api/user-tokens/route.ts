@@ -67,19 +67,17 @@ export async function GET(request: NextRequest) {
       tokens: []
     }, { headers: cacheHeaders });
 
-    /* Disabled for Sepolia fhEVM - Magic Eden doesn't support Sepolia testnet
-    const apiUrl = `${ME_API_BASE_URL}/users/${walletAddress}/tokens/v6?collection=${collection}&offset=${offset}&limit=${limit}`;
-    console.log(`🔗 API URL: ${apiUrl}`);
-
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${ME_API_KEY}`,
-        'accept': '*/*'
-      }
-    });
-
-    */
+    // Disabled for Sepolia fhEVM - Magic Eden doesn't support Sepolia testnet
+    // const apiUrl = `${ME_API_BASE_URL}/users/${walletAddress}/tokens/v6?collection=${collection}&offset=${offset}&limit=${limit}`;
+    // console.log(`🔗 API URL: ${apiUrl}`);
+    //
+    // const response = await fetch(apiUrl, {
+    //   method: 'GET',
+    //   headers: {
+    //     'Authorization': `Bearer ${ME_API_KEY}`,
+    //     'accept': '*/*'
+    //   }
+    // });
 
   } catch (error) {
     console.error('❌ Error in user-tokens API:', error);
