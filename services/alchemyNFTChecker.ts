@@ -49,7 +49,7 @@ export async function getVerifiedNFTsUserHoldsAlchemy(walletAddress: string): Pr
     
     alchemyResponse.ownedNfts.forEach(nft => {
       const contractAddress = nft.contract.address.toLowerCase();
-      console.log(`🔄 Processing NFT: ${nft.name} from ${contractAddress}`);
+      console.log(`🔄 Processing NFT: ${nft.title || nft.tokenId} from ${contractAddress}`);
       if (!nftsByContract[contractAddress]) {
         nftsByContract[contractAddress] = [];
       }
