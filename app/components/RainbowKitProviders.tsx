@@ -47,7 +47,7 @@ const connectors = connectorsForWallets([
   {
     groupName: 'Popular',
     wallets: [
-      metaMaskWallet({ chains }),
+      metaMaskWallet({ projectId: 'fhevm-nft-trading', chains }),
       injectedWallet({ chains }),
       coinbaseWallet({ appName: 'fhEVM NFT Trading', chains }),
     ],
