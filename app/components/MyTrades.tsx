@@ -336,7 +336,7 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
         functionName: 'cancelTrade',
         args: [BigInt(recoveryResult.tradeId)],
         account: address as `0x${string}`,
-        chain: monadTestnet
+        chain: sepoliaTestnet
       })
 
       console.log('Cancel transaction sent:', hash)
