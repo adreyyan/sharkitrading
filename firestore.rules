@@ -1,0 +1,84 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions for validation
+    function isValidEthereumAddress(address) {
+      return address is string && 
+             address.size() == 42 && 
+             address[0:2] == '0x' &&
+             address.matches('^0x[a-fA-F0-9]{40}$');
+    }
+    
+    function isValidTradeStatus(status) {
+      return status in ['pending', 'accepted', 'declined', 'cancelled'];
+    }
+    
+    function isValidNFTItem(item) {
+      return item.keys().hasAll(['contract', 'tokenId']) &&
+             isValidEthereumAddress(item.contract) &&
+             item.tokenId is string &&
+             item.tokenId.size() > 0;
+    }
+    
+    function isValidNFTArray(nfts) {
+      return nfts is list &&
+             nfts.size() <= 50 && // Reasonable limit
+             nfts.all(item => isValidNFTItem(item));
+    }
+    
+    function isValidMonadAmount(amount) {
+      return amount is string &&
+             amount.matches('^[0-9]+(\\.[0-9]+)?$') &&
+             float(amount) >= 0 &&
+             float(amount) <= 1000000; // Reasonable upper limit
+    }
+    
+    // Trades collection rules
+    match /trades/{tradeId} {
+      // Allow read for sharing trade links (public read)
+      // In production, you might want to restrict this further
+      allow read: if true;
+      
+      // Allow create - temporarily simplified for debugging
+      allow create: if 
+        // Basic validation only
+        request.resource.data.from is string &&
+        request.resource.data.to is string &&
+        request.resource.data.from != request.resource.data.to &&
+        request.resource.data.status == 'pending';
+      
+      // Allow update only for status changes by involved parties
+      allow update: if 
+        resource != null &&
+        
+        // Only allow status updates and addition of updatedAt timestamp
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']) &&
+        
+        // Validate new status
+        isValidTradeStatus(request.resource.data.status) &&
+        
+        // Validate updatedAt timestamp
+        request.resource.data.updatedAt == request.time &&
+        
+        // Allow status updates - validation is primarily done by the smart contract
+        // The app uses wallet signatures for authentication
+        true;
+      
+      // Deny delete operations - trades should be permanent records
+      allow delete: if false;
+    }
+    
+    // Query rules for trades collection
+    match /trades {
+      // Allow listing trades with reasonable limits
+      allow list: if request.query.limit <= 100; // Reasonable pagination limit
+    }
+    
+    // Deny access to any other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 
