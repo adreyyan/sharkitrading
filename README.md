@@ -82,6 +82,26 @@ vercel --prod
 
 ---
 
+## 🧪 **Testing & Getting Test NFTs**
+
+To test the trading platform, you'll need some test NFTs on Sepolia:
+
+### **Mint Free Test NFTs**:
+🎨 **Zama Test Collection**: [https://zama-test.testnet.nfts2.me/](https://zama-test.testnet.nfts2.me/)
+
+1. Visit the link above
+2. Connect your wallet (Sepolia testnet)
+3. Mint free test NFTs for trading
+4. Use these NFTs to test the trading functionality
+
+### **Get Sepolia ETH**:
+You'll need some Sepolia ETH for gas and trade fees:
+- [Sepolia Faucet 1](https://sepoliafaucet.com/)
+- [Alchemy Sepolia Faucet](https://www.alchemy.com/faucets/ethereum-sepolia)
+- [Chainlink Faucet](https://faucets.chain.link/sepolia)
+
+---
+
 ## 📦 **Smart Contract**
 
 ### **NFTTradingFHEV7** (Deployed on Sepolia)
