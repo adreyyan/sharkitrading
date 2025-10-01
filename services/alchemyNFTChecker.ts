@@ -30,9 +30,17 @@ export async function getVerifiedNFTsUserHoldsAlchemy(walletAddress: string): Pr
   }
 
   try {
-    // Fetch all NFTs for the wallet using Alchemy
-    console.log('🌐 Fetching ALL NFTs from Alchemy (no contract filtering)...');
-    const alchemyResponse = await fetchWalletNFTs(walletAddress);
+    // Fetch all NFTs for the wallet using Alchemy via API route
+    console.log('🌐 Fetching ALL NFTs from Alchemy via API route (no contract filtering)...');
+    const response = await fetch(`/api/alchemy-nfts?owner=${walletAddress}&raw=true`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ API route error:', errorText);
+      throw new Error(`API route error: ${response.status}`);
+    }
+    
+    const alchemyResponse = await response.json();
     
     if (!alchemyResponse.ownedNfts || alchemyResponse.ownedNfts.length === 0) {
       console.log('📭 No NFTs found for this wallet');
@@ -149,28 +157,28 @@ export function getVerifiedNFTConfig(contractAddress: string) {
  */
 export async function getVerifiedNFTsUserHoldsSmart(walletAddress: string): Promise<VerifiedNFTHolding[]> {
   const isTestnet = process.env.NEXT_PUBLIC_NETWORK === 'sepolia';
-  const hasAlchemyKey = !!process.env.ALCHEMY_API_KEY;
   
   console.log('🎯 getVerifiedNFTsUserHoldsSmart called with:', {
     walletAddress,
     isTestnet,
-    hasAlchemyKey,
     network: process.env.NEXT_PUBLIC_NETWORK
   });
   
-  if (isTestnet && hasAlchemyKey) {
-    console.log('🧪 Using Alchemy for testnet NFT fetching');
+  // For testnet (Sepolia), always try Alchemy via API route
+  // The API route has access to ALCHEMY_API_KEY on the server side
+  if (isTestnet) {
+    console.log('🧪 Using Alchemy API route for testnet NFT fetching');
     try {
       const result = await getVerifiedNFTsUserHoldsAlchemy(walletAddress);
       console.log('🎉 Alchemy result:', result.length, 'collections found');
       return result;
     } catch (error) {
-      console.error('❌ Alchemy error, falling back to existing logic:', error);
+      console.error('❌ Alchemy API error, falling back to existing logic:', error);
       // Fall back to existing logic if Alchemy fails
     }
   }
   
-  console.log('🌐 Using existing Magic Eden logic (testnet:', isTestnet, ', hasKey:', hasAlchemyKey, ')');
+  console.log('🌐 Using existing Magic Eden logic for mainnet');
   // Import and use existing function
   const { getVerifiedNFTsUserHolds } = await import('./verifiedNFTChecker');
   return getVerifiedNFTsUserHolds(walletAddress);

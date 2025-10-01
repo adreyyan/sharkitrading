@@ -6,7 +6,6 @@ import SortDropdown from './SortDropdown';
 import { Collection, NFT } from '../../types/nft';
 import { getNFTsForCollection } from '../../services/nft';
 import { getVerifiedNFTsUserHoldsSmart, VerifiedNFTHolding } from '../../services/alchemyNFTChecker';
-import { getHardcodedNFTsForTestWallet } from '../../services/hardcodedNFTChecker';
 import { useIsMounted } from '../hooks/useIsMounted';
 import { useNFTCollections } from '../hooks/useNFTCollections';
 import { useBalance, useWalletClient } from 'wagmi';
@@ -208,10 +207,10 @@ export default function TradeInterface({ userAddress, TradePanelComponent }: Tra
       console.log('🚀 DIRECTLY CHECKING VERIFIED NFTS FOR:', userAddress);
       setIsLoadingVerifiedNFTs(true);
       
-      console.log('🚀 TESTING WITH HARDCODED CURL DATA for user:', userAddress);
-      getHardcodedNFTsForTestWallet(userAddress)
+      console.log('🚀 FETCHING USER NFTS from Alchemy for:', userAddress);
+      getVerifiedNFTsUserHoldsSmart(userAddress)
         .then(holdings => {
-          console.log('🎯 HARDCODED USER HOLDINGS RESULT:', holdings);
+          console.log('🎯 USER HOLDINGS RESULT from Alchemy:', holdings);
           console.log('🎯 Holdings count:', holdings.length);
           if (holdings.length > 0) {
             holdings.forEach((holding, index) => {
@@ -248,9 +247,9 @@ export default function TradeInterface({ userAddress, TradePanelComponent }: Tra
       console.log('🚀 CHECKING COUNTERPARTY VERIFIED NFTS FOR:', counterpartyAddress);
       setIsLoadingCounterpartyVerifiedNFTs(true);
       
-      getHardcodedNFTsForTestWallet(counterpartyAddress)
+      getVerifiedNFTsUserHoldsSmart(counterpartyAddress)
         .then(holdings => {
-          console.log('🎯 HARDCODED COUNTERPARTY HOLDINGS FOUND:', holdings);
+          console.log('🎯 COUNTERPARTY HOLDINGS from Alchemy:', holdings);
           setCounterpartyVerifiedHoldings(holdings);
           
           if (holdings.length > 0) {

@@ -10,14 +10,15 @@ import {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const wallet = searchParams.get('wallet');
+    const wallet = searchParams.get('wallet') || searchParams.get('owner'); // Support both params
     const contractAddress = searchParams.get('contract');
     const pageKey = searchParams.get('pageKey');
     const type = searchParams.get('type') || 'nfts'; // 'nfts' or 'collections'
+    const raw = searchParams.get('raw') === 'true'; // Return raw Alchemy response
     
     if (!wallet) {
       return NextResponse.json(
-        { error: 'Wallet address is required' },
+        { error: 'Wallet address (wallet or owner parameter) is required' },
         { status: 400 }
       );
     }
@@ -34,7 +35,8 @@ export async function GET(request: NextRequest) {
       wallet,
       contractAddress,
       pageKey,
-      type
+      type,
+      raw
     });
 
     if (type === 'collections') {
@@ -57,6 +59,12 @@ export async function GET(request: NextRequest) {
       } else {
         // Fetch all NFTs for the wallet
         alchemyResponse = await fetchWalletNFTs(wallet, pageKey || undefined);
+      }
+      
+      // If raw=true, return the raw Alchemy response
+      if (raw) {
+        console.log('✅ Returning raw Alchemy response');
+        return NextResponse.json(alchemyResponse);
       }
       
       const nfts = alchemyResponse.ownedNfts.map(convertAlchemyNFTToAppNFT);
