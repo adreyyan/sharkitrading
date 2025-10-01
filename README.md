@@ -1,4 +1,4 @@
-# Sharki - Privacy-Enabled NFT Trading Platform
+# Privacy-Enabled NFT Trading Platform
 
 A fully decentralized P2P NFT trading platform powered by **Zama's fhEVM** (Fully Homomorphic Encryption Virtual Machine), bringing privacy-preserving digital asset exchanges to Ethereum.
 
@@ -6,7 +6,7 @@ Built with **encrypted on-chain transactions** - trade NFTs and ETH with complet
 
 ---
 
-## 🔐 **What Makes Sharki Special?**
+## 🔐 **What Makes It Special?**
 
 - **🛡️ Private Transactions**: ETH amounts are encrypted on-chain using fhEVM
 - **🤝 P2P Trading**: Direct trades with specific wallets (like Steam trading)
@@ -40,9 +40,6 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
 
 # Alchemy API (for NFT fetching on Sepolia testnet)
 NEXT_PUBLIC_ALCHEMY_API_KEY=your-alchemy-api-key
-
-# Optional: Magic Eden API (for Monad mainnet - currently unused)
-NEXT_PUBLIC_ME_API_KEY=your-magic-eden-api-key
 ```
 
 ### 3. Get API Keys
@@ -202,9 +199,9 @@ Fully Homomorphic Encryption for Ethereum Virtual Machine allows smart contracts
 - Contract validates trades without seeing amounts
 - True privacy-preserving DeFi
 
-### **Traditional vs Sharki**
+### **Traditional vs fhEVM-Based Trading**
 
-| Feature | Traditional DEX | Sharki (fhEVM) |
+| Feature | Traditional DEX | This Platform (fhEVM) |
 |---------|----------------|----------------|
 | **Price Visibility** | Public on-chain | Encrypted on-chain |
 | **MEV Protection** | ❌ Vulnerable | ✅ Protected |
@@ -287,4 +284,4 @@ MIT License - see [LICENSE](./LICENSE) file for details
 
 **Built with ❤️ using Zama's fhEVM for true on-chain privacy**
 
-*Trade freely. Trade privately. Trade with Sharki.* 🦈🔐
+*Trade freely. Trade privately.* 🔐
