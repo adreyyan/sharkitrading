@@ -1,7 +1,7 @@
 const { ethers } = require('ethers');
 
 const CONTRACT_ADDRESS = "0xd70aA9c1f3acFa306b1A0E9ff350D90434859678"; // ✅ V4 CONTRACT
-const PRIVATE_KEY = "0x1b46c7e9b2df8b9e2e5b2e6b8e4c1e3f9d7c8a6b5e4f3d2c1a9b8e7f6d5c4b3a2"; // The correct counterparty key
+const PRIVATE_KEY = process.env.TEST_PRIVATE_KEY || ""; // Use environment variable for testing
 const TRADE_ID = 6;
 
 const CONTRACT_ABI = [

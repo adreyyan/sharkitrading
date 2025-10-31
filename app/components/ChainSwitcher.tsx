@@ -10,13 +10,6 @@ const chains = [
     active: true,
     comingSoon: false,
     color: 'blue'
-  },
-  {
-    name: 'Solana',
-    symbol: 'SOL',
-    active: false,
-    comingSoon: true,
-    color: 'purple'
   }
 ];
 

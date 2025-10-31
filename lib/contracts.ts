@@ -1,55 +1,51 @@
-import { MONAD_NFT_TRADING_ABI } from './abi';
-import { MONAD_NFT_TRADING_V6_ABI } from './abi-v6';
-import { BASIC_NFT_TRADING_ABI } from './abi-basic';
 import { FHEVM_V7_ABI } from './abi-fhev7';
+import { PRIVATE_NFT_VAULT_ABI } from './abi-vault';
+import { PRIVATE_TRADING_ABI } from './abi-private-trading';
+import { PRIVATE_NFT_TRADING_V1_ABI } from './abi-v1';
 
-// ✅ V5 CONTRACT - FIXED MONAD TRANSFER LOGIC - DEPLOYED
-export const MONAD_NFT_TRADING_V5_ADDRESS = "0x773C0fc7Ce0489B078A532123dd0D86131E1ACf9";
+// ═══════════════════════════════════════════════════════════════
+// 🔐 PRIVATE NFT VAULT SYSTEM - TRUE PRIVACY!
+// ═══════════════════════════════════════════════════════════════
+export const PRIVATE_NFT_VAULT_ADDRESS = "0xaABBC3d80b9C7e33Eaf2D148f52d60A5ebBc4084"; // ✅ WITH WITHDRAW FIX!
+export const PRIVATE_NFT_TRADING_V1_ADDRESS = "0xB4981E473Ad74a410b5479bf21635c47108D243a"; // ✅ FIXED!
+export const FHEVM_V7_ADDRESS = "0xf898Ecf6aE3e69cAA21026d95b4964c6641fe7bD"; // Regular NFT trading
+export const PRIVATE_NFT_TRADING_ADDRESS = "0xc5f8a764Ee8843cF7AF326845F2448a5e6C9f5eF"; // Old (fhevmjs)
 
-// 🆕 V6 CONTRACT - ENHANCED ADMIN FEATURES - DEPLOYED (MONAD)
-export const MONAD_NFT_TRADING_V6_ADDRESS = "0x9e2c22E0D77500ddD9e15d5ff3D27F7643e1dCE3";
+// Main addresses
+export const NFT_TRADING_ADDRESS = PRIVATE_NFT_TRADING_V1_ADDRESS; // ✅ ACTIVE: Receipt trading!
+export const NFT_VAULT_ADDRESS = PRIVATE_NFT_VAULT_ADDRESS; // Vault for privacy
 
-// 🔐 fhEVM V7 CONTRACT - PRIVACY-ENABLED TRADING WITH V7 INTERFACE - DEPLOYED (SEPOLIA)
-export const FHEVM_NFT_TRADING_ADDRESS = "0xf898Ecf6aE3e69cAA21026d95b4964c6641fe7bD";
+// ═══════════════════════════════════════════════════════════════
+// CONTRACT CONFIGURATIONS
+// ═══════════════════════════════════════════════════════════════
 
-// 🆕 BASIC CONTRACT - NON-ENCRYPTED TRADING - FOR TESTING (SEPOLIA)  
-export const BASIC_NFT_TRADING_ADDRESS = "0x695a59b769FcFD3Af710891fc24282772DCd6302"; // Old fhEVM address
-
-// Current active contract (fhEVM with encrypted amounts)
-export const MONAD_NFT_TRADING_ADDRESS = FHEVM_NFT_TRADING_ADDRESS;
-
-// Contract configurations
-export const CONTRACT_V5_CONFIG = {
-  address: MONAD_NFT_TRADING_V5_ADDRESS,
-  abi: MONAD_NFT_TRADING_ABI,
+// Main working contract - PrivateNFTTradingV1 for receipt trading!
+export const CONTRACT_CONFIG = {
+  address: PRIVATE_NFT_TRADING_V1_ADDRESS,
+  abi: PRIVATE_NFT_TRADING_V1_ABI,
 } as const;
 
-export const CONTRACT_V6_CONFIG = {
-  address: MONAD_NFT_TRADING_V6_ADDRESS,
-  abi: MONAD_NFT_TRADING_V6_ABI,
+// Vault system (for documentation)
+export const CONTRACT_VAULT_CONFIG = {
+  address: PRIVATE_NFT_VAULT_ADDRESS,
+  abi: PRIVATE_NFT_VAULT_ABI,
 } as const;
 
-export const CONTRACT_FHEVM_CONFIG = {
-  address: FHEVM_NFT_TRADING_ADDRESS,
-  abi: FHEVM_V7_ABI, // FHEV7 ABI with correct signature
+export const CONTRACT_PRIVATE_TRADING_CONFIG = {
+  address: PRIVATE_NFT_TRADING_ADDRESS,
+  abi: PRIVATE_TRADING_ABI,
 } as const;
 
-export const CONTRACT_BASIC_CONFIG = {
-  address: BASIC_NFT_TRADING_ADDRESS,
-  abi: BASIC_NFT_TRADING_ABI, // Basic contract without encryption
-} as const;
-
-// Current active contract config (fhEVM V7 for Sepolia)
-export const CONTRACT_CONFIG = CONTRACT_FHEVM_CONFIG;
+export const VAULT_CONFIG = CONTRACT_VAULT_CONFIG;
 
 // Contract constants
 export const TRADE_FEE = "0.01"; // 0.01 ETH fee per trade (FHEV7 contract - can be changed by admin)
 export const FEE_RECIPIENT = "0x20ce27B140A0EEECceF880e01D2082558400FDd6";
 
-// Monad Testnet configuration
-export const MONAD_TESTNET = {
+// Legacy Network Configuration (kept for backwards compatibility)
+export const LEGACY_TESTNET = {
   chainId: 10143,
-  name: 'Monad Testnet',
+  name: 'Legacy Testnet',
   rpcUrl: 'https://testnet-rpc.monad.xyz/',
   hyperRpcUrl: 'https://10143.rpc.hypersync.xyz/5f7ec725-dcfb-426c-bbe1-a363cd56630d',
   blockExplorer: 'https://testnet-explorer.monad.xyz/',

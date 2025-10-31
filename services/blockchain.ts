@@ -1,7 +1,17 @@
 import { ethers } from 'ethers';
-import { CONTRACT_CONFIG, TRADE_FEE, getOptimalProvider, HYPER_RPC_SUPPORTED_METHODS, ACTIVE_NETWORK } from '@/lib/contracts';
+import { CONTRACT_CONFIG, TRADE_FEE, getOptimalProvider, HYPER_RPC_SUPPORTED_METHODS, ACTIVE_NETWORK, NFT_VAULT_ADDRESS, CONTRACT_VAULT_CONFIG } from '@/lib/contracts';
 import { NFT } from '@/types/nft';
 import { TradeData } from '@/types/trade';
+
+// 🔐 TEMPORARY: Mock encryption until fhevmjs webpack issues are resolved
+// TODO: Re-enable proper encryption after fhEVM v0.9 testnet deployment (Oct 27-31)
+const encryptAmount = async (amount: string | number, provider: any) => {
+  console.warn('⚠️ Using MOCK encryption - real fhEVM encryption temporarily disabled');
+  return {
+    encryptedData: '0x0000000000000000000000000000000000000000000000000000000000000000',
+    inputProof: '0x',
+  };
+};
 
 // Simple rate limiter to prevent hitting QuickNode limits
 class RateLimiter {
@@ -159,13 +169,130 @@ export interface CreateTradeParams {
   counterpartyAddress: string;
   userNFTs: Array<{ contractAddress: string; tokenId: string; amount?: string; standard?: number }>;
   counterpartyNFTs: Array<{ contractAddress: string; tokenId: string; amount?: string; standard?: number }>;
-  userMonadAmount: string;
-  counterpartyMonadAmount: string;
+  userETHAmount: string;
+  counterpartyETHAmount: string;
   message: string;
   // expiryHours removed - now fixed at 1 day
 }
 
 // Create a new trade on the blockchain
+/**
+ * ✅ NEW: Create trade with vault receipts (PrivateNFTTradingV1)
+ * Simple, clean, NO encryption hell!
+ */
+export async function createTradeV1(
+  params: {
+    counterpartyAddress: string;
+    offeredReceiptIds: string[]; // Plain tokenIds (receipt IDs)
+    requestedReceiptIds: string[];
+    offeredETH: string; // ETH amount as string
+    requestedETH: string;
+    message: string;
+  },
+  walletClient: any
+): Promise<string> {
+  const signer = await walletClientToSigner(walletClient);
+  const contract = getContract(signer);
+  if (!contract) throw new Error('Contract not available');
+
+  try {
+    console.log('\n🎫 CREATING VAULT RECEIPT TRADE (V1)');
+    console.log('====================================');
+    console.log('Counterparty:', params.counterpartyAddress);
+    console.log('Offered Receipt IDs:', params.offeredReceiptIds);
+    console.log('Requested Receipt IDs:', params.requestedReceiptIds);
+    console.log('Offered ETH:', params.offeredETH);
+    console.log('Requested ETH:', params.requestedETH);
+
+    // Get trade fee from contract
+    let feeAmount: number;
+    try {
+      const tradeFeeWei = await contract.tradeFee();
+      feeAmount = parseFloat(ethers.formatEther(tradeFeeWei));
+      console.log(`💰 Trade fee: ${feeAmount} ETH`);
+    } catch (error) {
+      console.warn('⚠️ Could not fetch fee, using default 0.01 ETH');
+      feeAmount = 0.01;
+    }
+
+    // Calculate total value (offered ETH + fee)
+    const offeredETHAmount = parseFloat(params.offeredETH) || 0;
+    const totalValue = ethers.parseEther((offeredETHAmount + feeAmount).toString());
+    console.log(`💰 Total ETH to send: ${ethers.formatEther(totalValue)} ETH`);
+
+    // Convert receipt IDs to uint256
+    console.log('🔍 Converting receipt IDs to BigInt:');
+    console.log('  Offered IDs (raw):', params.offeredReceiptIds);
+    console.log('  Requested IDs (raw):', params.requestedReceiptIds);
+    
+    // Filter out undefined/null values
+    const validOfferedIds = params.offeredReceiptIds.filter(id => id !== undefined && id !== null && id !== '');
+    const validRequestedIds = params.requestedReceiptIds.filter(id => id !== undefined && id !== null && id !== '');
+    
+    if (validOfferedIds.length === 0 && params.offeredETH === '0') {
+      throw new Error('❌ No receipts selected! Please select at least one vault receipt to trade.');
+    }
+    
+    const offeredIds = validOfferedIds.map(id => BigInt(id));
+    const requestedIds = validRequestedIds.map(id => BigInt(id));
+    const requestedETHWei = ethers.parseEther(params.requestedETH || "0");
+    
+    console.log('  Offered IDs (BigInt):', offeredIds);
+    console.log('  Requested IDs (BigInt):', requestedIds);
+
+    console.log('\n📡 Calling PrivateNFTTradingV1.createTrade...');
+    console.log('Contract address:', CONTRACT_CONFIG.address);
+    console.log('Parameters:');
+    console.log('  - Counterparty:', params.counterpartyAddress);
+    console.log('  - Offered IDs:', offeredIds);
+    console.log('  - Requested IDs:', requestedIds);
+    console.log('  - Requested ETH:', ethers.formatEther(requestedETHWei));
+    console.log('  - Message:', params.message || '(empty)');
+    console.log('  - Value (ETH):', ethers.formatEther(totalValue));
+    
+    console.log('\n🚀 Sending transaction...');
+    const tx = await contract.createTrade(
+      params.counterpartyAddress,
+      offeredIds,
+      requestedIds,
+      requestedETHWei,
+      params.message || '',
+      { value: totalValue }
+    );
+
+    console.log('✅ Transaction sent:', tx.hash);
+    console.log('⏳ Waiting for confirmation...');
+    const receipt = await tx.wait();
+    console.log('✅ Transaction confirmed!');
+    console.log('   Block:', receipt.blockNumber);
+    console.log('   Gas used:', receipt.gasUsed.toString());
+
+    // Extract trade ID from TradeCreated event
+    const tradeCreatedEvent = receipt.logs.find((log: any) => {
+      try {
+        const parsed = contract.interface.parseLog(log);
+        return parsed?.name === 'TradeCreated';
+      } catch {
+        return false;
+      }
+    });
+
+    if (tradeCreatedEvent) {
+      const parsed = contract.interface.parseLog(tradeCreatedEvent);
+      const tradeId = parsed?.args?.tradeId?.toString();
+      console.log('✅ Trade ID:', tradeId);
+      return tradeId;
+    }
+
+    console.log('✅ Trade created (ID from contract)');
+    return receipt.hash;
+  } catch (error: any) {
+    console.error('❌ Error creating trade:', error);
+    throw new Error(`Failed to create trade: ${error.message}`);
+  }
+}
+
+// OLD: Keep for backwards compatibility (regular NFT trading)
 export async function createTrade(params: CreateTradeParams, walletClient: any): Promise<string> {
   const signer = await walletClientToSigner(walletClient);
   const contract = getContract(signer);
@@ -179,7 +306,7 @@ export async function createTrade(params: CreateTradeParams, walletClient: any):
     console.log('================================================');
 
     // Calculate total ETH needed (user amount + dynamic fee from FHEV7 contract)
-    const userAmount = parseFloat(params.userMonadAmount) || 0;
+    const userAmount = parseFloat(params.userETHAmount) || 0;
     
     // Get dynamic trade fee from FHEV7 contract
     let feeAmount: number;
@@ -204,6 +331,22 @@ export async function createTrade(params: CreateTradeParams, walletClient: any):
       let amount = nft.amount || "1";
       
       console.log(`\n🔍 Processing offered NFT: ${nft.contractAddress}:${nft.tokenId}`);
+      
+      // Check if this is a vault receipt (special handling)
+      const isVaultReceipt = nft.contractAddress.toLowerCase() === NFT_VAULT_ADDRESS.toLowerCase();
+      
+      if (isVaultReceipt) {
+        console.log(`🎫 This is a VAULT RECEIPT - skipping ownership/approval checks`);
+        console.log(`   Vault receipts are encrypted and transferred via PrivateNFTTrading contract`);
+        
+        // Return vault receipt directly - no approval needed
+        return {
+          contractAddress: nft.contractAddress,
+          tokenId: nft.tokenId,
+          amount: "1",
+          standard: 0 // Treat as ERC721 for contract compatibility
+        };
+      }
       
       // Auto-detect token standard if not provided
       if (standard === undefined) {
@@ -412,6 +555,22 @@ export async function createTrade(params: CreateTradeParams, walletClient: any):
       
       console.log(`\n🔍 Processing requested NFT: ${nft.contractAddress}:${nft.tokenId}`);
       
+      // Check if this is a vault receipt (special handling)
+      const isVaultReceipt = nft.contractAddress.toLowerCase() === NFT_VAULT_ADDRESS.toLowerCase();
+      
+      if (isVaultReceipt) {
+        console.log(`🎫 This is a VAULT RECEIPT - skipping ownership/approval checks`);
+        console.log(`   Vault receipts are encrypted and transferred via PrivateNFTTrading contract`);
+        
+        // Return vault receipt directly - no approval needed
+        return {
+          contractAddress: nft.contractAddress,
+          tokenId: nft.tokenId,
+          amount: "1",
+          standard: 0 // Treat as ERC721 for contract compatibility
+        };
+      }
+      
       // Auto-detect token standard if not provided
       if (standard === undefined) {
         try {
@@ -465,21 +624,23 @@ export async function createTrade(params: CreateTradeParams, walletClient: any):
           standard: nft.standard === 0 ? 'ERC721' : 'ERC1155'
         }))
       },
-      offeredETH: params.userMonadAmount,
-      requestedETH: params.counterpartyMonadAmount,
+      offeredETH: params.userETHAmount,
+      requestedETH: params.counterpartyETHAmount,
       totalValue: ethers.formatEther(totalValue),
       message: params.message
     });
 
-    // Call the smart contract with FHEV7 contract signature (V7 compatible)
-    console.log(`\n📡 Calling createTrade on FHEV7 contract...`);
+    // REGULAR NFT TRADING (FHEVM V7)
+    // Note: Vault receipts are not tradable yet (requires fhevmjs integration)
+    console.log(`\n📡 Calling NFTTradingFHEV7.createTrade...`);
+    
     const tx = await contract.createTrade(
       params.counterpartyAddress,
       offeredNFTs,
       requestedNFTs,
-      ethers.parseEther(params.counterpartyMonadAmount), // requestedETH (will be encrypted internally)
-      params.message,
-      { value: totalValue } // offeredETH comes from msg.value - tradeFee (will be encrypted internally)
+      ethers.parseEther(params.counterpartyETHAmount || "0"),
+      params.message || '',
+      { value: totalValue }
     );
 
     console.log('✅ Transaction sent:', tx.hash);
@@ -557,9 +718,24 @@ export async function createTrade(params: CreateTradeParams, walletClient: any):
     if (error.message?.includes('missing revert data') || error.message?.includes('CALL_EXCEPTION')) {
       // Check if any NFTs were involved that might need approval
       if (offeredNFTs.length > 0) {
+        // Check if these are vault receipts
+        const isVaultReceipt = offeredNFTs[0].contractAddress.toLowerCase() === NFT_VAULT_ADDRESS.toLowerCase();
+        
         const nftDetails = offeredNFTs.map(nft => 
           `${nft.contractAddress}:${nft.tokenId} (${nft.standard === 0 ? 'ERC721' : 'ERC1155'})`
         ).join(', ');
+        
+        if (isVaultReceipt) {
+          throw new Error(
+            `❌ VAULT RECEIPT APPROVAL REQUIRED!\n\n` +
+            `You're trading vault receipts but they're not approved.\n\n` +
+            `Vault receipts: ${nftDetails}\n\n` +
+            `💡 SOLUTION:\n` +
+            `The vault contract (${NFT_VAULT_ADDRESS}) needs to approve the trading contract.\n` +
+            `Call: vault.setApprovalForAll("${CONTRACT_CONFIG.address}", true)\n\n` +
+            `This should happen automatically - if you see this error, the approval failed!`
+          );
+        }
         
         throw new Error(
           `❌ Transaction failed with "missing revert data" error!\n\n` +
@@ -591,73 +767,141 @@ export async function acceptTrade(tradeId: string, walletClient: any, progressCa
   };
 
   try {
-    updateProgress('Starting trade acceptance with auto-approval...');
+    updateProgress('Starting trade acceptance...');
     
-    // Step 1: Check and handle NFT approvals
-    updateProgress('Checking required NFT approvals...');
-    const requiredApprovals = await getRequiredApprovalsForTrade(tradeId, walletClient, true);
+    // ✅ V1 Simplified: Check vault approval if acceptor is offering receipts
+    const userAddress = await signer.getAddress();
     
-    if (requiredApprovals.length > 0) {
-      updateProgress(`Found ${requiredApprovals.length} NFTs requiring approval`);
+    try {
+      const trade = await contract.getTrade(tradeId);
+      const requestedReceiptIds = trade.requestedReceiptIds || [];
       
-      // Auto-approve each required NFT
-      for (let i = 0; i < requiredApprovals.length; i++) {
-        const approval = requiredApprovals[i];
-        updateProgress(`Approving ${approval.standard} NFT (${i + 1}/${requiredApprovals.length}): ${approval.contractAddress.slice(0, 6)}...${approval.contractAddress.slice(-4)}`);
+      // If trade requests receipts from acceptor, check vault approval
+      if (requestedReceiptIds.length > 0) {
+        updateProgress('Checking vault approval...');
+        const isVaultApproved = await isVaultApprovedForTrading(userAddress);
         
-        if (approval.standard === 'ERC721') {
-          await approveERC721ForTrading(approval.contractAddress, approval.tokenId, walletClient);
+        if (!isVaultApproved) {
+          updateProgress('Approving vault for trading...');
+          await approveVaultForTrading(walletClient);
+          updateProgress('Vault approved!');
         } else {
-          await approveERC1155ForTrading(approval.contractAddress, walletClient);
+          updateProgress('Vault already approved ✓');
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not check vault approval:', error);
+    }
+    
+    updateProgress('Preparing transaction...');
+    
+    // Get trade details FIRST
+    console.log('\n📊 FETCHING TRADE DETAILS...');
+    const trade = await contract.getTrade(tradeId);
+    
+    console.log('  Creator:', trade.creator);
+    console.log('  Counterparty:', trade.counterparty);
+    console.log('  Status:', trade.status);
+    console.log('  Offered Receipt IDs:', trade.offeredReceiptIds);
+    console.log('  Requested Receipt IDs:', trade.requestedReceiptIds);
+    console.log('  Offered ETH:', ethers.formatEther(trade.offeredETH || 0n));
+    console.log('  Requested ETH:', ethers.formatEther(trade.requestedETH || 0n));
+    
+    // 🚨 DEBUG: Check if counterparty owns the requested receipts
+    console.log('\n🔍 CHECKING RECEIPT OWNERSHIP...');
+    console.log('  Acceptor (you):', userAddress);
+    
+    if (trade.requestedReceiptIds && trade.requestedReceiptIds.length > 0) {
+      console.log('  ⚠️ This trade requests YOU to provide these receipts:');
+      for (let i = 0; i < trade.requestedReceiptIds.length; i++) {
+        console.log(`    - Receipt ID: ${trade.requestedReceiptIds[i]}`);
+      }
+      console.log('\n  ❓ Do you OWN these receipts? Check your vault!');
+      
+      // Get user's vault receipts to verify ownership
+      try {
+        const { getUserVaultReceipts } = await import('./vault');
+        const userReceipts = await getUserVaultReceipts(userAddress);
+        console.log('  Your vault receipts:', userReceipts.map(r => r.receiptId));
+        
+        // Check if user owns all requested receipts
+        const missingReceipts: string[] = [];
+        for (const requestedId of trade.requestedReceiptIds) {
+          const owns = userReceipts.some(r => r.receiptId.toLowerCase() === requestedId.toLowerCase());
+          if (!owns) {
+            missingReceipts.push(requestedId.toString());
+          }
         }
         
-        updateProgress(`Approved ${approval.standard} NFT (${i + 1}/${requiredApprovals.length})`);
+        if (missingReceipts.length > 0) {
+          throw new Error(
+            `❌ You cannot accept this trade!\n\n` +
+            `This trade requires you to provide receipts you DON'T own:\n` +
+            missingReceipts.map(id => `  • ${id}`).join('\n') + '\n\n' +
+            `You need to own these vault receipts to accept this trade.`
+          );
+        } else {
+          console.log('  ✅ You own all requested receipts!');
+        }
+      } catch (error: any) {
+        if (error.message?.includes('cannot accept this trade')) {
+          throw error; // Re-throw ownership errors
+        }
+        console.warn('  ⚠️ Could not verify receipt ownership:', error);
       }
-      
-      updateProgress('All NFT approvals completed');
     } else {
-      updateProgress('No NFT approvals required');
+      console.log('  ✅ No receipts requested from you');
     }
-
-    // Step 2: Execute the trade
-    updateProgress('Executing trade transaction...');
     
-    // FHEV7 contract only requires the trade fee (ETH amounts are encrypted and handled internally)
+    // Get trade fee
     let tradeFee: bigint;
     try {
       tradeFee = await contract.tradeFee();
-      console.log(`💰 Dynamic trade fee: ${ethers.formatEther(tradeFee)} ETH`);
+      console.log('  Trade Fee:', ethers.formatEther(tradeFee), 'ETH');
     } catch (error) {
-      console.warn('⚠️ Could not fetch dynamic fee, using default 0.01 ETH');
-      tradeFee = ethers.parseEther("0.01"); // Fallback to hardcoded fee
+      console.warn('⚠️ Could not fetch fee, using default 0.01 ETH');
+      tradeFee = ethers.parseEther("0.01");
     }
 
-    console.log('Accepting trade:', {
-      tradeId,
-      tradeFee: ethers.formatEther(tradeFee),
-      note: 'ETH amounts are encrypted and verified by contract'
-    });
+    // Calculate total ETH needed
+    const requestedETH = BigInt(trade.requestedETH.toString());
+    const totalETH = tradeFee + requestedETH;
+    
+    console.log('\n💰 ETH CALCULATION:');
+    console.log('  Requested ETH:', ethers.formatEther(requestedETH));
+    console.log('  Trade Fee:', ethers.formatEther(tradeFee));
+    console.log('  TOTAL NEEDED:', ethers.formatEther(totalETH), 'ETH');
+    console.log('  ↑ THIS IS WHAT WILL BE SENT ↑');
 
-    const tx = await contract.acceptTrade(tradeId, { value: tradeFee });
+    console.log('\n🎫 SENDING ACCEPT TRANSACTION');
+    console.log('================================');
+
+    updateProgress('Sending acceptance transaction...');
+    const tx = await contract.acceptTrade(tradeId, { value: totalETH });
+    
     updateProgress('Transaction sent, waiting for confirmation...');
-    console.log('Accept transaction sent:', tx.hash);
+    console.log('✅ Accept transaction sent:', tx.hash);
     
     const receipt = await tx.wait();
-    updateProgress('Trade accepted successfully');
+    console.log('✅ Trade accepted successfully!');
+    console.log('================================\n');
+    
+    updateProgress('Trade accepted successfully! 🎉');
     
     return receipt.hash;
   } catch (error) {
-    console.error('Error accepting trade:', error);
+    console.error('\n❌ ERROR ACCEPTING TRADE:');
+    console.error(error);
+    console.error('================================\n');
     
-    // Enhanced error handling for common issues
+    // Simplified error messages for V1
     if (error.message?.includes('missing revert data') || error.message?.includes('CALL_EXCEPTION')) {
       throw new Error(
-        `Trade acceptance failed!\n\n` +
-        `This usually indicates an NFT approval issue or insufficient balance.\n\n` +
-        `Please ensure:\n` +
-        `1. You own all required NFTs\n` +
-        `2. All NFTs are properly approved for trading\n` +
-        `3. You have sufficient MONAD balance\n\n` +
+        `❌ Trade acceptance failed!\n\n` +
+        `Possible issues:\n` +
+        `1. Insufficient ETH balance (need trade fee + requested ETH)\n` +
+        `2. Trade already accepted or cancelled\n` +
+        `3. Not the correct counterparty\n\n` +
         `Original error: ${error.message}`
       );
     }
@@ -1134,14 +1378,40 @@ export async function batchApproveNFTsForTrading(
     try {
       if (standard === 'ERC721') {
         // For ERC721, we just need setApprovalForAll once per collection
+        console.log(`\n🔐 About to request wallet signature for ERC721 approval...`);
+        console.log(`  Collection: ${contractAddress}`);
+        console.log(`  Operator: ${CONTRACT_CONFIG.address}`);
+        
         const signer = await walletClientToSigner(walletClient);
         const erc721Contract = new ethers.Contract(
           contractAddress,
           ['function setApprovalForAll(address operator, bool approved)'],
           signer
         );
+        
+        console.log(`  🚀 Calling setApprovalForAll... (wallet should prompt now)`);
         const tx = await erc721Contract.setApprovalForAll(CONTRACT_CONFIG.address, true);
-        await tx.wait();
+        
+        console.log(`  ⏳ Transaction sent! Hash: ${tx.hash}`);
+        console.log(`  ⏳ Waiting for confirmation...`);
+        
+        const receipt = await tx.wait();
+        
+        console.log(`  ✅ Transaction confirmed! Block: ${receipt.blockNumber}`);
+        
+        // VERIFY the approval actually worked
+        console.log(`  🔍 Verifying approval was successful...`);
+        const userAddr = await signer.getAddress();
+        const isNowApproved = await erc721Contract.isApprovedForAll(
+          userAddr,
+          CONTRACT_CONFIG.address
+        );
+        
+        if (!isNowApproved) {
+          throw new Error(`Approval transaction succeeded but isApprovedForAll still returns false!`);
+        }
+        
+        console.log(`  ✅ VERIFIED: Approval is now active on-chain!`);
       } else {
         await approveERC1155ForTrading(contractAddress, walletClient);
       }
@@ -1168,6 +1438,12 @@ export async function isNFTApprovedForTrading(
   const provider = optimalProvider.getProvider();
   
   try {
+    console.log(`\n🔍 Checking approval for ${standard}:`);
+    console.log(`  Contract: ${contractAddress}`);
+    console.log(`  TokenId: ${tokenId}`);
+    console.log(`  User: ${userAddress}`);
+    console.log(`  Trading Contract: ${CONTRACT_CONFIG.address}`);
+    
     if (standard === 'ERC721') {
       const erc721Contract = new ethers.Contract(
         contractAddress,
@@ -1181,10 +1457,17 @@ export async function isNFTApprovedForTrading(
       const approvedAddress = await erc721Contract.getApproved(tokenId);
       const isApprovedForAll = await erc721Contract.isApprovedForAll(userAddress, CONTRACT_CONFIG.address);
       
-      return (
+      console.log(`  getApproved(${tokenId}): ${approvedAddress}`);
+      console.log(`  isApprovedForAll: ${isApprovedForAll}`);
+      
+      const isApproved = (
         approvedAddress.toLowerCase() === CONTRACT_CONFIG.address.toLowerCase() ||
         isApprovedForAll
       );
+      
+      console.log(`  ✅ FINAL RESULT: ${isApproved}\n`);
+      
+      return isApproved;
       
     } else { // ERC1155
       // First validate that the contract exists
@@ -1212,7 +1495,15 @@ export async function isNFTApprovedForTrading(
     }
     
   } catch (error) {
-    console.error('Error checking NFT approval:', error);
+    console.error('❌ Error checking NFT approval:', error);
+    console.error('  Contract:', contractAddress);
+    console.error('  TokenId:', tokenId);
+    console.error('  User:', userAddress);
+    console.error('  Standard:', standard);
+    
+    // FAIL-SAFE: If we can't check approval, assume it's NOT approved
+    // This is safer than throwing an error that might be caught incorrectly
+    console.warn('⚠️ Could not verify approval - assuming NOT approved (fail-safe)');
     return false;
   }
 }
@@ -1391,4 +1682,85 @@ export async function claimAssets(tradeId: string | number, walletClient: any): 
   const receipt = await tx.wait();
   console.log('✅ Transaction confirmed');
   return receipt.hash;
+}
+
+/**
+ * 🔑 VAULT RECEIPT APPROVAL FUNCTIONS
+ */
+
+/**
+ * Check if vault receipts are approved for trading contract
+ */
+export async function isVaultApprovedForTrading(
+  userAddress: string
+): Promise<boolean> {
+  try {
+    // Get provider from ethers
+    const provider = new ethers.JsonRpcProvider('https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161');
+    
+    const vaultContract = new ethers.Contract(
+      CONTRACT_VAULT_CONFIG.address,
+      CONTRACT_VAULT_CONFIG.abi,
+      provider
+    );
+    
+    const isApproved = await vaultContract.isApprovedForAll(
+      userAddress,
+      CONTRACT_CONFIG.address
+    );
+    
+    console.log(`🔑 Vault approval check: ${isApproved ? '✅ APPROVED' : '❌ NOT APPROVED'}`);
+    return isApproved;
+  } catch (error) {
+    console.error('❌ Error checking vault approval:', error);
+    return false;
+  }
+}
+
+/**
+ * Approve trading contract to transfer vault receipts
+ */
+export async function approveVaultForTrading(
+  walletClient: any
+): Promise<void> {
+  try {
+    console.log('\n🔑 APPROVING VAULT RECEIPTS FOR TRADING');
+    console.log('  Vault:', CONTRACT_VAULT_CONFIG.address);
+    console.log('  Trading Contract:', CONTRACT_CONFIG.address);
+    
+    const signer = await walletClientToSigner(walletClient);
+    const vaultContract = new ethers.Contract(
+      CONTRACT_VAULT_CONFIG.address,
+      CONTRACT_VAULT_CONFIG.abi,
+      signer
+    );
+    
+    console.log('  📝 Requesting approval...');
+    const tx = await vaultContract.setApprovalForAll(
+      CONTRACT_CONFIG.address,
+      true
+    );
+    
+    console.log('  ⏳ Transaction sent:', tx.hash);
+    console.log('  ⏳ Waiting for confirmation...');
+    
+    const receipt = await tx.wait();
+    console.log('  ✅ Approval confirmed! Block:', receipt.blockNumber);
+    
+    // Verify approval worked
+    const userAddress = await signer.getAddress();
+    const isApproved = await vaultContract.isApprovedForAll(
+      userAddress,
+      CONTRACT_CONFIG.address
+    );
+    
+    if (!isApproved) {
+      throw new Error('Approval transaction succeeded but verification failed!');
+    }
+    
+    console.log('  ✅ VERIFIED: Vault receipts are now approved for trading!');
+  } catch (error) {
+    console.error('❌ Vault approval failed:', error);
+    throw error;
+  }
 }

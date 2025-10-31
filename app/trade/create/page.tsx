@@ -120,8 +120,8 @@ export default function CreateTradePage() {
   const [loading, setLoading] = useState(false);
   const [offeredNFTs, setOfferedNFTs] = useState<NFT[]>([]);
   const [requestedNFTs, setRequestedNFTs] = useState<NFT[]>([]);
-  const [offeredMONAD, setOfferedMONAD] = useState('0');
-  const [requestedMONAD, setRequestedMONAD] = useState('0');
+  const [offeredETH, setOfferedETH] = useState('0');
+  const [requestedETH, setRequestedETH] = useState('0');
   const [toAddress, setToAddress] = useState('');
   const [message, setMessage] = useState('');
   const [tokenIdInput, setTokenIdInput] = useState('');
@@ -221,8 +221,8 @@ export default function CreateTradePage() {
           contractAddress: nft.contractAddress,
           tokenId: nft.tokenId
         })),
-        userMonadAmount: offeredMONAD || '0',
-        counterpartyMonadAmount: requestedMONAD || '0',
+        userETHAmount: offeredETH || '0',
+        counterpartyETHAmount: requestedETH || '0',
         message: message || ''
       };
 
@@ -255,8 +255,8 @@ export default function CreateTradePage() {
           image: nft.image,
           name: nft.name
         })),
-        offeredMonad: offeredMONAD,
-        requestedMonad: requestedMONAD,
+        offeredETH: offeredETH,
+        requestedETH: requestedETH,
         message: message,
         blockchainTradeId: blockchainTradeId
       });
@@ -449,16 +449,16 @@ export default function CreateTradePage() {
           nfts={myNFTs}
           selectedNFTs={offeredNFTs}
           onSelect={(nft) => removeNFT(nft.tokenId, true)}
-          monadAmount={offeredMONAD}
-          onMonadChange={setOfferedMONAD}
+          monadAmount={offeredETH}
+          onMonadChange={setOfferedETH}
           title="Your Offer"
         />
         <NFTSelection
           nfts={theirNFTs}
           selectedNFTs={requestedNFTs}
           onSelect={(nft) => removeNFT(nft.tokenId, false)}
-          monadAmount={requestedMONAD}
-          onMonadChange={setRequestedMONAD}
+          monadAmount={requestedETH}
+          onMonadChange={setRequestedETH}
           title="Your Request"
         />
       </div>
@@ -466,7 +466,7 @@ export default function CreateTradePage() {
       <button
         className="w-full bg-blue-600 text-white rounded-lg py-3 font-medium hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
         onClick={handleCreateTrade}
-        disabled={loading || !toAddress || !isValidEvmAddress(toAddress) || (!offeredNFTs.length && !parseFloat(offeredMONAD)) || (!requestedNFTs.length && !parseFloat(requestedMONAD))}
+        disabled={loading || !toAddress || !isValidEvmAddress(toAddress) || (!offeredNFTs.length && !parseFloat(offeredETH)) || (!requestedNFTs.length && !parseFloat(requestedETH))}
       >
         {loading ? (
           <div className="flex items-center justify-center gap-2">

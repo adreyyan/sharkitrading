@@ -7,8 +7,8 @@ export interface TradeProposal {
   toAddress: string;
   offeredNFTs: NFT[];
   requestedNFTs: NFT[];
-  offeredMONAD: string;
-  requestedMONAD: string;
+  offeredETH: string;
+  requestedETH: string;
   createdAt: any; // Firebase Timestamp
   updatedAt: any; // Firebase Timestamp
 }

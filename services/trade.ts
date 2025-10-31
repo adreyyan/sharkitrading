@@ -29,8 +29,8 @@ export interface TradeProposal {
   to: string;
   offer: NFTItem[];
   requested: NFTItem[];
-  offeredMonad?: string;
-  requestedMonad?: string;
+  offeredETH?: string;
+  requestedETH?: string;
   message?: string;
   status: 'pending' | 'accepted' | 'declined' | 'cancelled';
   createdAt: any;
@@ -47,8 +47,8 @@ export async function proposeTrade({
   to,
   offer,
   requested,
-  offeredMonad,
-  requestedMonad,
+  offeredETH,
+  requestedETH,
   message,
   blockchainTradeId
 }: {
@@ -56,8 +56,8 @@ export async function proposeTrade({
   to: string;
   offer: NFTItem[];
   requested: NFTItem[];
-  offeredMonad?: string;
-  requestedMonad?: string;
+  offeredETH?: string;
+  requestedETH?: string;
   message?: string;
   blockchainTradeId?: string;
 }): Promise<string> {
@@ -66,8 +66,8 @@ export async function proposeTrade({
     to,
     offer,
     requested,
-    offeredMonad,
-    requestedMonad,
+    offeredETH,
+    requestedETH,
     message,
     blockchainTradeId
   });
@@ -77,12 +77,12 @@ export async function proposeTrade({
     throw new Error('Both from and to addresses are required');
   }
 
-  if ((!offer || offer.length === 0) && (!offeredMonad || parseFloat(offeredMonad) === 0)) {
-    throw new Error('Must offer at least one NFT or some MONAD');
+  if ((!offer || offer.length === 0) && (!offeredETH || parseFloat(offeredETH) === 0)) {
+    throw new Error('Must offer at least one NFT or some ETH');
   }
 
-  if ((!requested || requested.length === 0) && (!requestedMonad || parseFloat(requestedMonad) === 0)) {
-    throw new Error('Must request at least one NFT or some MONAD');
+  if ((!requested || requested.length === 0) && (!requestedETH || parseFloat(requestedETH) === 0)) {
+    throw new Error('Must request at least one NFT or some ETH');
   }
 
   try {
@@ -91,8 +91,8 @@ export async function proposeTrade({
       to: to.toLowerCase(),
       offer: offer || [],
       requested: requested || [],
-      offeredMonad: offeredMonad || '0',
-      requestedMonad: requestedMonad || '0',
+      offeredETH: offeredETH || '0',
+      requestedETH: requestedETH || '0',
       message: message || '',
       status: 'pending',
       createdAt: serverTimestamp(),

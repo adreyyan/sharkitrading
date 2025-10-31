@@ -12,8 +12,10 @@ import { useBalance, useWalletClient } from 'wagmi';
 import type { default as TradePanelType } from './TradePanel';
 import { useRouter } from 'next/navigation';
 import { proposeTrade } from '../../services/trade';
-import { createTrade, approveERC1155ForTrading, isERC1155ApprovedForTrading, approveNFTForTrading, batchApproveNFTsForTrading, isNFTApprovedForTrading } from '../../services/blockchain';
+import { createTrade, createTradeV1, approveERC1155ForTrading, isERC1155ApprovedForTrading, approveNFTForTrading, batchApproveNFTsForTrading, isNFTApprovedForTrading, isVaultApprovedForTrading, approveVaultForTrading } from '../../services/blockchain';
+import { getUserVaultReceipts } from '../../services/vault';
 import { isERC1155NFT } from '../config/verifiedNFTs';
+import { NFT_VAULT_ADDRESS } from '../../lib/contracts';
 import { toast } from 'react-hot-toast';
 import MyTrades from './MyTrades';
 
@@ -27,6 +29,7 @@ interface NFTWithCount extends NFT {
   selectedCount: number;
   isCounterparty?: boolean;
   collectionName?: string;
+  isVaultReceipt?: boolean;
 }
 
 // Maximum NFT limit per side of trade
@@ -200,6 +203,36 @@ export default function TradeInterface({ userAddress, TradePanelComponent }: Tra
   const [isLoadingVerifiedNFTs, setIsLoadingVerifiedNFTs] = useState(false);
   const [counterpartyVerifiedHoldings, setCounterpartyVerifiedHoldings] = useState<VerifiedNFTHolding[]>([]);
   const [isLoadingCounterpartyVerifiedNFTs, setIsLoadingCounterpartyVerifiedNFTs] = useState(false);
+  
+  // Vault receipts state
+  const [userVaultReceipts, setUserVaultReceipts] = useState<any[]>([]);
+  const [isLoadingVaultReceipts, setIsLoadingVaultReceipts] = useState(false);
+
+  // Load vault receipts for user
+  useEffect(() => {
+    if (userAddress && isMounted) {
+      console.log('🏦 Loading vault receipts for:', userAddress);
+      setIsLoadingVaultReceipts(true);
+      
+      getUserVaultReceipts(userAddress)
+        .then(receipts => {
+          console.log('🎫 Vault receipts loaded:', receipts.length);
+          setUserVaultReceipts(receipts);
+        })
+        .catch(error => {
+          console.error('Error loading vault receipts:', error);
+          setUserVaultReceipts([]);
+        })
+        .finally(() => {
+          setIsLoadingVaultReceipts(false);
+        });
+    } else {
+      setUserVaultReceipts([]);
+    }
+  }, [userAddress, isMounted]);
+
+  // Note: Vault receipt trading requires fhevmjs integration (future feature)
+  // For now, vault is used for private storage only
 
   // Direct verified NFT checker - bypasses collections API
   useEffect(() => {
@@ -625,6 +658,92 @@ export default function TradeInterface({ userAddress, TradePanelComponent }: Tra
                     </div>
                   ) : (
                     <div className="p-4 space-y-6">
+                      {/* Vault Receipts Section - ENABLED! */}
+                      {userVaultReceipts.length > 0 && (
+                        <div className="space-y-4 pb-6 border-b border-blue-500/30">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
+                              <span>🎫</span>
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold text-blue-400 text-base">
+                                  Vault Receipts (Private)
+                                </h3>
+                                <svg className="w-4 h-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                              <div className="text-sm text-gray-400">
+                                {userVaultReceipts.length} encrypted receipt{userVaultReceipts.length !== 1 ? 's' : ''}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                            {userVaultReceipts.map((receipt) => {
+                              const isSelected = state.userSelectedNFTs.some(
+                                selected => selected.tokenId === receipt.receiptId
+                              );
+
+                              const currentTotalCount = state.userSelectedNFTs.reduce((total, selectedNft) => total + selectedNft.selectedCount, 0);
+                              const isLimitReached = currentTotalCount >= MAX_NFTS_PER_SIDE && !isSelected;
+
+                              return (
+                                <div
+                                  key={receipt.receiptId}
+                                  onClick={() => {
+                                    if (!isLimitReached) {
+                                      // Add vault receipt as a selectable item
+                                      const receiptNFT = {
+                                        tokenId: receipt.receiptId,
+                                        name: `Receipt #${receipt.receiptId.slice(0, 8)}...`,
+                                        description: '🔐 Encrypted NFT',
+                                        image: '/placeholder.svg',
+                                        contractAddress: NFT_VAULT_ADDRESS,
+                                        collectionId: NFT_VAULT_ADDRESS,
+                                        ownership: { tokenCount: '1' },
+                                        floorPrice: 0,
+                                        selectedCount: 1,
+                                        ownedCount: 1,
+                                        collectionName: 'Vault Receipt',
+                                        isCounterparty: false,
+                                        standard: 'ERC721' as 'ERC721' | 'ERC1155',
+                                        balance: '1',
+                                        isVaultReceipt: true
+                                      };
+                                      handleUserSelect(receiptNFT);
+                                    }
+                                  }}
+                                  className={`relative rounded p-1 transition-all duration-200 backdrop-blur-sm ${
+                                    isLimitReached 
+                                      ? 'opacity-50 cursor-not-allowed' 
+                                      : 'cursor-pointer hover:scale-105'
+                                  } ${
+                                    isSelected 
+                                      ? 'bg-blue-500/20 border-2 border-blue-500 shadow-lg' 
+                                      : isLimitReached
+                                      ? 'bg-gray-500/10 border border-gray-500/30'
+                                      : 'bg-blue-500/10 border-2 border-blue-500/30 hover:border-blue-400 hover:bg-blue-500/20'
+                                  }`}
+                                >
+                                  <div className="aspect-square bg-gradient-to-br from-blue-600 to-purple-600 rounded overflow-hidden relative flex items-center justify-center">
+                                    <div className="text-4xl">🎫</div>
+                                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                      <div className="text-white text-xs font-bold">🔐</div>
+                                    </div>
+                                  </div>
+                                  <div className="text-xs font-medium text-blue-400 text-center truncate mt-0.5">
+                                    #{receipt.receiptId.slice(0, 6)}...
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Regular NFTs Section */}
                       {userVerifiedHoldings.map((holding) => (
                         <div key={holding.collectionId} className="space-y-4">
                           <div className="flex items-center gap-3">
@@ -900,6 +1019,91 @@ export default function TradeInterface({ userAddress, TradePanelComponent }: Tra
                 </div>
               ) : (
                 <div className="p-4 space-y-6">
+                  {/* Vault Receipts Section - Desktop - ENABLED! */}
+                  {userVaultReceipts.length > 0 && (
+                    <div className="space-y-4 pb-6 border-b border-blue-500/30">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
+                          <span>🎫</span>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-blue-400 text-base">
+                              Vault Receipts (Private)
+                            </h3>
+                            <svg className="w-4 h-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="text-sm text-gray-400">
+                            {userVaultReceipts.length} encrypted receipt{userVaultReceipts.length !== 1 ? 's' : ''}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-4 gap-3">
+                        {userVaultReceipts.map((receipt) => {
+                          const isSelected = state.userSelectedNFTs.some(
+                            selected => selected.tokenId === receipt.receiptId
+                          );
+
+                          const currentTotalCount = state.userSelectedNFTs.reduce((total, selectedNft) => total + selectedNft.selectedCount, 0);
+                          const isLimitReached = currentTotalCount >= MAX_NFTS_PER_SIDE && !isSelected;
+
+                          return (
+                            <div
+                              key={receipt.receiptId}
+                              onClick={() => {
+                                if (!isLimitReached) {
+                                  const receiptNFT = {
+                                    tokenId: receipt.receiptId,
+                                    name: `Receipt #${receipt.receiptId.slice(0, 8)}...`,
+                                    description: '🔐 Encrypted NFT',
+                                    image: '/placeholder.svg',
+                                    contractAddress: NFT_VAULT_ADDRESS,
+                                    collectionId: NFT_VAULT_ADDRESS,
+                                    ownership: { tokenCount: '1' },
+                                    floorPrice: 0,
+                                    selectedCount: 1,
+                                    ownedCount: 1,
+                                    collectionName: 'Vault Receipt',
+                                    isCounterparty: false,
+                                    standard: 'ERC721' as 'ERC721' | 'ERC1155',
+                                    balance: '1',
+                                    isVaultReceipt: true
+                                  };
+                                  handleUserSelect(receiptNFT);
+                                }
+                              }}
+                              className={`relative rounded p-1 transition-all duration-200 backdrop-blur-sm ${
+                                isLimitReached 
+                                  ? 'opacity-50 cursor-not-allowed' 
+                                  : 'cursor-pointer hover:scale-105'
+                              } ${
+                                isSelected 
+                                  ? 'bg-blue-500/20 border-2 border-blue-500 shadow-lg' 
+                                  : isLimitReached
+                                  ? 'bg-gray-500/10 border border-gray-500/30'
+                                  : 'bg-blue-500/10 border-2 border-blue-500/30 hover:border-blue-400 hover:bg-blue-500/20'
+                              }`}
+                            >
+                              <div className="aspect-square bg-gradient-to-br from-blue-600 to-purple-600 rounded overflow-hidden relative flex items-center justify-center">
+                                <div className="text-4xl">🎫</div>
+                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                  <div className="text-white text-xs font-bold">🔐</div>
+                                </div>
+                              </div>
+                              <div className="text-xs font-medium text-blue-400 text-center truncate mt-0.5">
+                                #{receipt.receiptId.slice(0, 6)}...
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Regular NFTs - Desktop */}
                   {userVerifiedHoldings.map((holding) => (
                     <div key={holding.collectionId} className="space-y-4">
                       <div className="flex items-center gap-3">
@@ -1344,98 +1548,177 @@ export default function TradeInterface({ userAddress, TradePanelComponent }: Tra
                     setIsProposing(true);
                     
                     try {
-                      toast.loading('Checking NFT approvals...', {
-                        id: 'trade-creation',
-                        duration: 0,
-                        position: 'bottom-right',
-                      });
+                      // Step 1: Auto-approve NFTs if needed
+                      // Skip vault receipts - they're already in the vault and don't need approval
+                      const regularNFTs = state.userSelectedNFTs.filter(nft => 
+                        nft.contractAddress.toLowerCase() !== NFT_VAULT_ADDRESS.toLowerCase()
+                      );
+                      
+                      if (regularNFTs.length > 0) {
+                        toast.loading('Checking NFT approvals...', {
+                          id: 'trade-creation',
+                          duration: 0,
+                          position: 'bottom-right',
+                        });
 
-                      // Step 1: Check and handle NFT approvals
-                      if (state.userSelectedNFTs.length > 0) {
-                        const nftsToCheck = state.userSelectedNFTs.map(nft => ({
+                        const nftsToCheck = regularNFTs.map(nft => ({
                           contractAddress: nft.contractAddress,
                           tokenId: nft.tokenId,
-                          standard: 'ERC721' as const // Assuming ERC721, but could be detected
+                          standard: 'ERC721' as const
                         }));
 
-                        // Check which NFTs need approval
-                        const needsApproval: Array<{contractAddress: string, tokenId: string, standard: 'ERC721' | 'ERC1155'}> = [];
+                        const needsApprovalList: Array<{contractAddress: string, tokenId: string, standard: 'ERC721' | 'ERC1155'}> = [];
+
+                        const vaultReceiptCount = state.userSelectedNFTs.length - regularNFTs.length;
+                        if (vaultReceiptCount > 0) {
+                          console.log(`\n🎫 Skipping ${vaultReceiptCount} vault receipt(s) - they're already in the vault!`);
+                        }
+                        console.log('\n🔍 AUTO APPROVAL: Checking', nftsToCheck.length, 'regular NFTs...');
                         
-                        try {
-                          for (const nft of nftsToCheck) {
-                            const isApproved = await isNFTApprovedForTrading(
-                              nft.contractAddress,
-                              nft.tokenId,
-                              userAddress,
-                              nft.standard
-                            );
-                            
-                            if (!isApproved) {
-                              needsApproval.push(nft);
-                            }
+                        for (const nft of nftsToCheck) {
+                          console.log(`\n📦 Checking NFT: ${nft.contractAddress}:${nft.tokenId}`);
+                          
+                          const isApproved = await isNFTApprovedForTrading(
+                            nft.contractAddress,
+                            nft.tokenId,
+                            userAddress,
+                            nft.standard
+                          );
+                          
+                          console.log(`  → Result: ${isApproved ? '✅ APPROVED' : '❌ NOT APPROVED'}`);
+                          
+                          if (!isApproved) {
+                            needsApprovalList.push(nft);
                           }
+                        }
 
-                          // Handle approvals if needed
-                          if (needsApproval.length > 0) {
-                            toast.loading(`Approving ${needsApproval.length} NFT collection${needsApproval.length > 1 ? 's' : ''} for trading...`, {
-                              id: 'trade-creation',
-                              duration: 0,
-                            });
+                        console.log(`\n📊 Approval Summary:`);
+                        console.log(`  Total checked: ${nftsToCheck.length}`);
+                        console.log(`  Need approval: ${needsApprovalList.length}`);
+                        console.log(`  Already approved: ${nftsToCheck.length - needsApprovalList.length}`);
 
-                            await batchApproveNFTsForTrading(
-                              needsApproval, 
-                              walletClient,
-                              (message, current, total) => {
-                                toast.loading(`${message} (${current}/${total})`, {
-                                  id: 'trade-creation',
-                                  duration: 0,
-                                });
-                              }
-                            );
-
-                            toast.loading('All NFTs approved! Creating trade...', {
-                              id: 'trade-creation',
-                              duration: 0,
-                            });
-                          }
-                        } catch (approvalError) {
-                          console.error('❌ Approval check/process failed:', approvalError);
-                          toast.error(`NFT approval failed: ${approvalError.message}`, {
+                        if (needsApprovalList.length > 0) {
+                          toast.loading(`Approving ${needsApprovalList.length} NFT collection(s)...`, {
                             id: 'trade-creation',
-                            duration: 5000,
+                            duration: 0,
                           });
-                          return; // Exit early if approval fails
+
+                          await batchApproveNFTsForTrading(
+                            needsApprovalList,
+                            walletClient,
+                            (message, current, total) => {
+                              toast.loading(`${message} (${current}/${total})`, {
+                                id: 'trade-creation',
+                                duration: 0,
+                              });
+                            }
+                          );
+
+                          console.log('✅ All NFTs approved!');
                         }
                       }
 
-                      // Step 2: Create blockchain trade (escrow NFTs and ETH)
-                      toast.loading('Preparing blockchain escrow...', {
-                        id: 'trade-creation',
-                        duration: 0,
-                      });
+                      // Note: Vault receipt trading is a future feature (requires fhevmjs)
+                      // For now, trade regular NFTs only (after withdrawing from vault if needed)
 
-                      const blockchainTradeParams = {
-                        counterpartyAddress: counterpartyAddress,
-                        userNFTs: state.userSelectedNFTs.map(nft => ({
-                          contractAddress: nft.contractAddress,
-                          tokenId: nft.tokenId
-                        })),
-                        counterpartyNFTs: state.counterpartySelectedNFTs.map(nft => ({
-                          contractAddress: nft.contractAddress,
-                          tokenId: nft.tokenId
-                        })),
-                        userMonadAmount: state.userETHAmount || '0',
-                        counterpartyMonadAmount: state.counterpartyETHAmount || '0',
-                        message: tradeMessage || ''
-                      };
+                      // Step 2: Create blockchain trade
+                      // ✅ Detect if trading vault receipts (V1) or regular NFTs (old)
+                      const userVaultReceipts = state.userSelectedNFTs.filter(nft => 
+                        nft.contractAddress.toLowerCase() === NFT_VAULT_ADDRESS.toLowerCase()
+                      );
+                      const counterpartyVaultReceipts = state.counterpartySelectedNFTs.filter(nft => 
+                        nft.contractAddress.toLowerCase() === NFT_VAULT_ADDRESS.toLowerCase()
+                      );
 
-                      toast.loading('Sending NFTs to escrow contract...', {
-                        id: 'trade-creation',
-                        duration: 0,
-                      });
+                      const isVaultReceiptTrade = 
+                        (state.userSelectedNFTs.length === userVaultReceipts.length) &&
+                        (state.counterpartySelectedNFTs.length === counterpartyVaultReceipts.length);
 
-                      // Execute blockchain trade creation (this will escrow the NFTs)
-                      const blockchainTradeId = await createTrade(blockchainTradeParams, walletClient);
+                      let blockchainTradeId: string;
+
+                      if (isVaultReceiptTrade) {
+                        // ✅ NEW: V1 Receipt Trading (Simple, clean!)
+                        console.log('\n🎫 Creating VAULT RECEIPT trade (V1)!');
+                        
+                        toast.loading('Preparing receipt trade...', {
+                          id: 'trade-creation',
+                          duration: 0,
+                        });
+
+                        // Check vault approval
+                        if (userVaultReceipts.length > 0) {
+                          const isVaultApproved = await isVaultApprovedForTrading(userAddress);
+                          if (!isVaultApproved) {
+                            toast.loading('Approving vault for trading...', {
+                              id: 'trade-creation',
+                              duration: 0,
+                            });
+                            await approveVaultForTrading(walletClient);
+                          }
+                        }
+
+                        toast.loading('Creating receipt trade...', {
+                          id: 'trade-creation',
+                          duration: 0,
+                        });
+
+                        // Get receipt IDs from SELECTED NFTs (not all receipts!)
+                        const selectedOfferedReceipts = state.userSelectedNFTs
+                          .filter(nft => nft.contractAddress.toLowerCase() === NFT_VAULT_ADDRESS.toLowerCase())
+                          .map(nft => nft.tokenId); // tokenId contains the receiptId
+                        
+                        const selectedRequestedReceipts = state.counterpartySelectedNFTs
+                          .filter(nft => nft.contractAddress.toLowerCase() === NFT_VAULT_ADDRESS.toLowerCase())
+                          .map(nft => nft.tokenId);
+                        
+                        console.log('🎫 Selected receipt IDs:');
+                        console.log('  Offered:', selectedOfferedReceipts);
+                        console.log('  Requested:', selectedRequestedReceipts);
+                        
+                        blockchainTradeId = await createTradeV1({
+                          counterpartyAddress,
+                          offeredReceiptIds: selectedOfferedReceipts,
+                          requestedReceiptIds: selectedRequestedReceipts,
+                          offeredETH: state.userETHAmount || '0',
+                          requestedETH: state.counterpartyETHAmount || '0',
+                          message: tradeMessage || ''
+                        }, walletClient);
+
+                        console.log('✅ Vault receipt trade created!', blockchainTradeId);
+                      } else {
+                        // ❌ OLD: Regular NFT trading (not supported for mixed trades)
+                        if (userVaultReceipts.length > 0 || counterpartyVaultReceipts.length > 0) {
+                          throw new Error('❌ Cannot mix vault receipts with regular NFTs in the same trade. Please trade only vault receipts or only regular NFTs.');
+                        }
+
+                        toast.loading('Preparing blockchain escrow...', {
+                          id: 'trade-creation',
+                          duration: 0,
+                        });
+
+                        const blockchainTradeParams = {
+                          counterpartyAddress: counterpartyAddress,
+                          userNFTs: state.userSelectedNFTs.map(nft => ({
+                            contractAddress: nft.contractAddress,
+                            tokenId: nft.tokenId
+                          })),
+                          counterpartyNFTs: state.counterpartySelectedNFTs.map(nft => ({
+                            contractAddress: nft.contractAddress,
+                            tokenId: nft.tokenId
+                          })),
+                          userETHAmount: state.userETHAmount || '0',
+                          counterpartyETHAmount: state.counterpartyETHAmount || '0',
+                          message: tradeMessage || ''
+                        };
+
+                        toast.loading('Sending NFTs to escrow contract...', {
+                          id: 'trade-creation',
+                          duration: 0,
+                        });
+
+                        // Execute blockchain trade creation (this will escrow the NFTs)
+                        blockchainTradeId = await createTrade(blockchainTradeParams, walletClient);
+                      }
 
                       // Step 3: Create Firebase record for shareable link
                       toast.loading('Creating shareable trade link...', {
@@ -1458,8 +1741,8 @@ export default function TradeInterface({ userAddress, TradePanelComponent }: Tra
                           image: nft.image,
                           name: nft.name || `NFT #${nft.tokenId}`
                         })),
-                        offeredMonad: state.userETHAmount,
-                        requestedMonad: state.counterpartyETHAmount,
+                        offeredETH: state.userETHAmount,
+                        requestedETH: state.counterpartyETHAmount,
                         message: tradeMessage,
                         blockchainTradeId: blockchainTradeId
                       });

@@ -1,115 +1,52 @@
 const hre = require("hardhat");
 
 async function main() {
-  console.log("🚀 Deploying TestNFT contract on Sepolia...");
-  
-  // Get the deployer account
+  console.log("\n🎨 DEPLOYING TEST NFT FOR DEMO\n");
+
   const [deployer] = await hre.ethers.getSigners();
-  console.log("📝 Deploying with account:", deployer.address);
+  console.log(`============================================================`);
+  console.log(`Deploying from: ${deployer.address}`);
+  console.log(`Balance: ${hre.ethers.formatEther(await deployer.provider.getBalance(deployer.address))} ETH`);
+
+  // Deploy TestNFT
+  console.log(`\n📦 Deploying TestNFTForDemo...`);
+  const TestNFT = await hre.ethers.getContractFactory("TestNFTForDemo");
+  const nft = await TestNFT.deploy();
+  await nft.waitForDeployment();
+  const nftAddress = await nft.getAddress();
+  console.log(`✅ TestNFTForDemo deployed to: ${nftAddress}`);
+
+  // Mint 5 NFTs for demo
+  console.log(`\n🎨 Minting 5 demo NFTs...`);
+  const tx = await nft.batchMint(deployer.address, 5);
+  await tx.wait();
+  console.log(`✅ Minted NFTs #1-5 to ${deployer.address}`);
+
+  // Check total supply
+  const totalSupply = await nft.totalSupply();
+  console.log(`\n📊 Total Supply: ${totalSupply}`);
+
+  console.log(`\n============================================================`);
+  console.log(`🎉 DEPLOYMENT COMPLETE!`);
+  console.log(`\n📝 CONTRACT INFO:`);
+  console.log(`  Address: ${nftAddress}`);
+  console.log(`  Name: Demo NFT`);
+  console.log(`  Symbol: DEMO`);
+  console.log(`  Owner: ${deployer.address}`);
+  console.log(`  Minted: 5 NFTs (IDs 1-5)`);
   
-  // Check balance
-  const balance = await deployer.provider.getBalance(deployer.address);
-  console.log("💰 Account balance:", hre.ethers.formatEther(balance), "ETH");
+  console.log(`\n🎬 FOR YOUR DEMO:`);
+  console.log(`1. You now have 5 test NFTs in your wallet`);
+  console.log(`2. Go to /vault and deposit them`);
+  console.log(`3. Get receipts #1-5`);
+  console.log(`4. Trade the receipts to show privacy!`);
   
-  if (balance < hre.ethers.parseEther("0.01")) {
-    console.log("⚠️  Low balance! You may need more Sepolia ETH from a faucet");
-  }
-
-  try {
-    // Deploy TestNFT contract
-    console.log("\n📦 Deploying TestNFT contract...");
-    const TestNFT = await hre.ethers.getContractFactory("TestNFT");
-    
-    const testNFT = await TestNFT.deploy({
-      gasLimit: 3000000,
-      gasPrice: hre.ethers.parseUnits("20", "gwei")
-    });
-    
-    await testNFT.waitForDeployment();
-    const contractAddress = await testNFT.getAddress();
-    
-    console.log("✅ TestNFT deployed to:", contractAddress);
-    console.log("🔗 Etherscan:", `https://sepolia.etherscan.io/address/${contractAddress}`);
-
-    // Wait for a few confirmations
-    console.log("\n⏳ Waiting for confirmations...");
-    await new Promise(resolve => setTimeout(resolve, 10000));
-
-    // Mint 10 test NFTs
-    console.log("\n🎨 Minting 10 test NFTs...");
-    
-    const nftNames = [
-      "Crypto Cat",
-      "Digital Dragon", 
-      "Pixel Penguin",
-      "Blockchain Bear",
-      "Ethereum Eagle",
-      "Solidity Shark",
-      "fhEVM Fox",
-      "Zama Zebra",
-      "Sepolia Snake",
-      "Test Tiger"
-    ];
-
-    const mintedTokens = [];
-    
-    for (let i = 0; i < 10; i++) {
-      try {
-        console.log(`🔨 Minting NFT #${i + 1}: ${nftNames[i]}...`);
-        
-        const tx = await testNFT.mint(deployer.address, nftNames[i], {
-          gasLimit: 200000,
-          gasPrice: hre.ethers.parseUnits("20", "gwei")
-        });
-        
-        const receipt = await tx.wait();
-        const tokenId = i + 1;
-        mintedTokens.push(tokenId);
-        
-        console.log(`   ✅ Minted "${nftNames[i]}" as Token #${tokenId}`);
-        console.log(`   📄 Tx: https://sepolia.etherscan.io/tx/${receipt.hash}`);
-        
-        // Small delay between mints
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-      } catch (error) {
-        console.error(`   ❌ Failed to mint NFT #${i + 1}:`, error.message);
-      }
-    }
-
-    // Get total supply
-    const totalSupply = await testNFT.totalSupply();
-    console.log(`\n🎯 Total minted NFTs: ${totalSupply}`);
-    
-    // Display summary
-    console.log("\n" + "=".repeat(60));
-    console.log("🎉 DEPLOYMENT & MINTING COMPLETE!");
-    console.log("=".repeat(60));
-    console.log(`📄 Contract: ${contractAddress}`);
-    console.log(`🔗 Etherscan: https://sepolia.etherscan.io/address/${contractAddress}`);
-    console.log(`👤 Owner: ${deployer.address}`);
-    console.log(`🎨 Total NFTs: ${totalSupply}`);
-    console.log(`📋 Token IDs: ${mintedTokens.join(", ")}`);
-    console.log("\n🔥 Ready to test fhEVM NFT trading!");
-    console.log("💡 Use this contract address in your trading interface");
-    
-    return {
-      contractAddress,
-      totalSupply: totalSupply.toString(),
-      mintedTokens,
-      deployerAddress: deployer.address
-    };
-
-  } catch (error) {
-    console.error("❌ Deployment failed:", error);
-    process.exit(1);
-  }
+  console.log(`\n📝 Add to your demo script:`);
+  console.log(`"I minted 5 test NFTs. Now watch as I deposit them into the vault..."`);
+  console.log(`============================================================`);
 }
 
-// Execute deployment
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
