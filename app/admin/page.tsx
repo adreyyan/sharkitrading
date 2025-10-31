@@ -7,7 +7,7 @@ import { getAllTradesForAdmin, updateTradeStatus, TradeProposal, cancelExpiredTr
 import { useWalletClient } from 'wagmi';
 import dynamic from 'next/dynamic';
 import ChainSwitcher from '../components/ChainSwitcher';
-import { FHEVM_NFT_TRADING_ADDRESS } from '@/lib/contracts';
+import { NFT_TRADING_ADDRESS } from '@/lib/contracts';
 
 // Define Sepolia Testnet chain for fhEVM
 const sepoliaTestnet = {
@@ -91,7 +91,7 @@ export default function AdminPanel({}: AdminPanelProps) {
       
       // Load admin data from fhEVM contract with timeout
       const contract = {
-        address: FHEVM_NFT_TRADING_ADDRESS as `0x${string}`,
+        address: NFT_TRADING_ADDRESS as `0x${string}`,
         abi: [
           {
             "inputs": [],
@@ -317,7 +317,7 @@ export default function AdminPanel({}: AdminPanelProps) {
       
       // Call fhEVM contract setTradeFee function
       const contract = {
-        address: FHEVM_NFT_TRADING_ADDRESS as `0x${string}`,
+        address: NFT_TRADING_ADDRESS as `0x${string}`,
         abi: [
           {
             "inputs": [

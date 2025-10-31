@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { useAccount } from 'wagmi'
 import Link from 'next/link'
 import { createPublicClient, http, parseAbiItem, decodeEventLog } from 'viem'
-import { MONAD_NFT_TRADING_V6_ADDRESS, CONTRACT_V6_CONFIG } from '@/lib/contracts'
+import { NFT_TRADING_ADDRESS, CONTRACT_CONFIG } from '@/lib/contracts'
 import { useWalletClient } from 'wagmi'
 
 const sepoliaTestnet = {
@@ -161,7 +161,7 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
       console.log('🔍 Starting recovery process...')
       console.log('📝 Transaction hash:', txHash)
       console.log('🌐 Public client:', publicClient)
-      console.log('📍 V6 Contract address:', MONAD_NFT_TRADING_V6_ADDRESS)
+      console.log('📍 V6 Contract address:', NFT_TRADING_ADDRESS)
       
       console.log('📡 Fetching transaction receipt...')
       
@@ -185,7 +185,7 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
       console.log('✅ Transaction was successful, proceeding to analyze logs...')
 
       console.log('Transaction logs:', receipt.logs)
-      console.log('Looking for V6 contract address:', MONAD_NFT_TRADING_V6_ADDRESS)
+      console.log('Looking for V6 contract address:', NFT_TRADING_ADDRESS)
       console.log('Transaction details:', {
         from: receipt.from,
         to: receipt.to,
@@ -201,7 +201,7 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
       let foundV6Logs = false
       
       for (const log of receipt.logs) {
-        const isV6Contract = log.address.toLowerCase() === MONAD_NFT_TRADING_V6_ADDRESS.toLowerCase()
+        const isV6Contract = log.address.toLowerCase() === NFT_TRADING_ADDRESS.toLowerCase()
         
         console.log('Checking log - address:', log.address, 'isV6Contract:', isV6Contract)
         
@@ -230,7 +230,7 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
               // Try to decode with full V6 ABI to see what event this actually is
               try {
                 const decodedAny = decodeEventLog({
-                  abi: CONTRACT_V6_CONFIG.abi,
+                  abi: CONTRACT_CONFIG.abi,
                   data: log.data,
                   topics: (log as any).topics as [`0x${string}`, ...`0x${string}`[]]
                 })
@@ -264,8 +264,8 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
 
       // Create contract instance for reading
       const contract = {
-        address: MONAD_NFT_TRADING_V6_ADDRESS as `0x${string}`,
-        abi: CONTRACT_V6_CONFIG.abi,
+        address: NFT_TRADING_ADDRESS as `0x${string}`,
+        abi: CONTRACT_CONFIG.abi,
       }
 
       // Fetch full trade details from blockchain
@@ -331,8 +331,8 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
 
       // Call cancelTrade on the contract
       const hash = await walletClient.writeContract({
-        address: MONAD_NFT_TRADING_V6_ADDRESS as `0x${string}`,
-        abi: CONTRACT_V6_CONFIG.abi,
+        address: NFT_TRADING_ADDRESS as `0x${string}`,
+        abi: CONTRACT_CONFIG.abi,
         functionName: 'cancelTrade',
         args: [BigInt(recoveryResult.tradeId)],
         account: address as `0x${string}`,
@@ -401,8 +401,8 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
           if (trade.userRole === 'creator') {
             console.log('🗑️ Cancelling trade on blockchain (user is creator)')
             hash = await walletClient.writeContract({
-              address: MONAD_NFT_TRADING_V6_ADDRESS as `0x${string}`,
-              abi: CONTRACT_V6_CONFIG.abi,
+              address: NFT_TRADING_ADDRESS as `0x${string}`,
+              abi: CONTRACT_CONFIG.abi,
               functionName: 'cancelTrade',
               args: [BigInt(trade.blockchainTradeId)],
               account: address as `0x${string}`,
@@ -411,8 +411,8 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
           } else {
             console.log('❌ Declining trade on blockchain (user is responder)')
             hash = await walletClient.writeContract({
-              address: MONAD_NFT_TRADING_V6_ADDRESS as `0x${string}`,
-              abi: CONTRACT_V6_CONFIG.abi,
+              address: NFT_TRADING_ADDRESS as `0x${string}`,
+              abi: CONTRACT_CONFIG.abi,
               functionName: 'declineTrade',
               args: [BigInt(trade.blockchainTradeId)],
               account: address as `0x${string}`,
@@ -501,8 +501,8 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
             
             try {
               const hash = await walletClient.writeContract({
-                address: MONAD_NFT_TRADING_V6_ADDRESS as `0x${string}`,
-                abi: CONTRACT_V6_CONFIG.abi,
+                address: NFT_TRADING_ADDRESS as `0x${string}`,
+                abi: CONTRACT_CONFIG.abi,
                 functionName: 'cancelTrade',
                 args: [BigInt(trade.blockchainTradeId)],
                 account: address as `0x${string}`,
@@ -596,8 +596,8 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
             
             try {
               const hash = await walletClient.writeContract({
-                address: MONAD_NFT_TRADING_V6_ADDRESS as `0x${string}`,
-                abi: CONTRACT_V6_CONFIG.abi,
+                address: NFT_TRADING_ADDRESS as `0x${string}`,
+                abi: CONTRACT_CONFIG.abi,
                 functionName: 'declineTrade',
                 args: [BigInt(trade.blockchainTradeId)],
                 account: address as `0x${string}`,
