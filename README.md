@@ -24,19 +24,19 @@ Think **Steam trading for NFTs** - but with cryptographic privacy guarantees on 
 
 ---
 
-## 📸 Trading Interface
+## 📸 Private NFT Vault Interface
 
 <div align="center">
 
-![Trading UI](./assets/trading-ui.png)
-*Sharki's peer-to-peer trading interface - trade encrypted vault receipts without revealing NFT contents to the public*
+![Vault Interface](./assets/vault.png)
+*Private NFT Vault - deposit NFTs and receive encrypted receipts that hide all details on-chain*
 
 ### Key Features Shown:
-- 🔐 **Vault Receipts (Private)**: Encrypted NFT representations
-- 🎭 **Hidden Token IDs**: Public can't see which NFTs are being traded
-- 🤝 **Peer-to-Peer Trading**: Direct trades between wallet addresses
-- 📦 **Your Inventory**: Select NFTs or vault receipts to offer
-- 🎯 **Their Inventory**: View counterparty's available assets
+- 🔐 **Encrypted Receipts**: NFT details stored as encrypted ciphertext
+- 🎭 **Hidden Token IDs**: Public can't see which NFTs you own (shows "🔐 Private")
+- 📦 **Deposit & Withdraw**: Seamless vault operations with FHE encryption
+- ✅ **Vault Approval**: One-click approval for trading encrypted receipts
+- 🦈 **User-Friendly**: Clean interface for managing your private NFT collection
 
 </div>
 
