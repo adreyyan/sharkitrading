@@ -288,9 +288,9 @@ export default function TradePage() {
               </div>
             }
             monadAmount={
-              trade.offeredMonad && parseFloat(trade.offeredMonad) > 0 ? (
+              trade.offeredETH && parseFloat(trade.offeredETH) > 0 ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900/60 border border-zinc-800 rounded-xl backdrop-blur-sm w-max">
-                  <span className="font-semibold text-white">{formatETH(trade.offeredMonad)} ETH</span>
+                  <span className="font-semibold text-white">{formatETH(trade.offeredETH)} ETH</span>
                 </div>
               ) : null
             }
@@ -315,9 +315,9 @@ export default function TradePage() {
               </div>
             }
             monadAmount={
-              trade.requestedMonad && parseFloat(trade.requestedMonad) > 0 ? (
+              trade.requestedETH && parseFloat(trade.requestedETH) > 0 ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900/60 border border-zinc-800 rounded-xl backdrop-blur-sm w-max">
-                  <span className="font-semibold text-white">{formatETH(trade.requestedMonad)} ETH</span>
+                  <span className="font-semibold text-white">{formatETH(trade.requestedETH)} ETH</span>
                 </div>
               ) : null
             }
