@@ -1,8 +1,26 @@
-# 🔐 Private NFT Trading with fhEVM
+# 🦈 Sharki - Private NFT Trading
 
-A **confidential NFT trading platform** that uses **Zama's fhEVM** (Fully Homomorphic Encryption Virtual Machine) to encrypt NFT ownership on-chain, enabling truly private trading where the public cannot see what assets are being exchanged.
+<div align="center">
 
-**Live Demo**: [sharkitrading.vercel.app](https://sharkitrading.vercel.app)
+![Sharki Logo](./assets/sharki.png)
+
+**Trade NFTs with True On-Chain Privacy using Zama's fhEVM**
+
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-sharki--zama.vercel.app-00D9FF?style=for-the-badge)](https://sharki-zama.vercel.app)
+[![GitHub](https://img.shields.io/badge/GitHub-sharkitrading-181717?style=for-the-badge&logo=github)](https://github.com/adreyyan/sharkitrading)
+[![Sepolia Testnet](https://img.shields.io/badge/Network-Sepolia_Testnet-8B5CF6?style=for-the-badge)](https://sepolia.etherscan.io/)
+
+**Built with Zama's Fully Homomorphic Encryption Virtual Machine (fhEVM)**
+
+</div>
+
+---
+
+## 🎯 What is Sharki?
+
+A **confidential NFT trading platform** that encrypts NFT ownership on-chain using **Zama's fhEVM**, enabling truly private trading where the public cannot see what assets are being exchanged.
+
+Think **Steam trading for NFTs** - but with cryptographic privacy guarantees on a public blockchain.
 
 ---
 
@@ -465,7 +483,7 @@ Etherscan Logs:
    ```
 
 2. **Create Trade**
-   - Use UI at [sharkitrading.vercel.app/swap](https://sharkitrading.vercel.app/swap)
+   - Use UI at [sharki-zama.vercel.app/swap](https://sharki-zama.vercel.app/swap)
    - Select vault receipts
    - Propose trade
 
@@ -568,7 +586,7 @@ MIT License - see [LICENSE](./LICENSE) file for details
 
 ## 🔗 Links
 
-- **Live Demo**: [sharkitrading.vercel.app](https://sharkitrading.vercel.app)
+- **Live Demo**: [sharki-zama.vercel.app](https://sharki-zama.vercel.app)
 - **PrivateNFTVault**: [0xAB92...464E2](https://sepolia.etherscan.io/address/0xAB921861ed9BB5876aeB828FF3de3e9160d464E2)
 - **PrivateNFTTradingV1**: [0xB498...D243a](https://sepolia.etherscan.io/address/0xB4981E473Ad74a410b5479bf21635c47108D243a)
 - **Example Deposit TX**: [0xa11cd31...980412](https://sepolia.etherscan.io/tx/0xa11cd31663ebe27036d0b8c2bc8360fcc06990cbfe7c8230706ed32c35980412)
