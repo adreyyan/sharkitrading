@@ -209,8 +209,8 @@ Etherscan Logs:
 
 ```bash
 # Clone repository
-git clone https://github.com/adreyyan/sharki-zama.git
-cd sharki-zama
+git clone https://github.com/adreyyan/sharkitrading.git
+cd sharkitrading
 
 # Install dependencies
 npm install
@@ -624,7 +624,7 @@ MIT License - see [LICENSE](./LICENSE) file for details
 ## 🔗 Links
 
 - **Live Demo**: [sharki-zama.vercel.app](https://sharki-zama.vercel.app)
-- **PrivateNFTVault**: [0xAB92...464E2](https://sepolia.etherscan.io/address/0xAB921861ed9BB5876aeB828FF3de3e9160d464E2)
+- **PrivateNFTVault**: [0xaABB...4084](https://sepolia.etherscan.io/address/0xaABBC3d80b9C7e33Eaf2D148f52d60A5ebBc4084)
 - **PrivateNFTTradingV1**: [0xB498...D243a](https://sepolia.etherscan.io/address/0xB4981E473Ad74a410b5479bf21635c47108D243a)
 - **Example Deposit TX**: [0xa11cd31...980412](https://sepolia.etherscan.io/tx/0xa11cd31663ebe27036d0b8c2bc8360fcc06990cbfe7c8230706ed32c35980412)
 
