@@ -45,57 +45,67 @@ export function useNFTCollections(address: Address | undefined) {
       }
       
       if (!userCollectionsData) {
-        // Reduced rate limiting delay from 2000ms to 500ms
-        await delay(500);
+        console.log('🔥 Fetching NFTs from Alchemy API...');
         
-        // Use our secure server-side API route instead of direct Magic Eden API
-        const collectionsResponse = await fetch(
-          `/api/user-collections?wallet=${userAddress}&includeTopBid=false&includeLiquidCount=false&offset=0&limit=100`
+        // Use Alchemy API to get all NFTs
+        const nftsResponse = await fetch(
+          `/api/alchemy-nfts?wallet=${userAddress}`
         );
 
-        if (!collectionsResponse.ok) {
+        if (!nftsResponse.ok) {
           // Log detailed error information
-          console.error('API Error Details:', {
-            status: collectionsResponse.status,
-            statusText: collectionsResponse.statusText,
-            url: collectionsResponse.url,
-            headers: Object.fromEntries(collectionsResponse.headers.entries())
+          console.error('Alchemy API Error Details:', {
+            status: nftsResponse.status,
+            statusText: nftsResponse.statusText,
+            url: nftsResponse.url
           });
           
           try {
-            const errorBody = await collectionsResponse.text();
+            const errorBody = await nftsResponse.text();
             console.error('Error Response Body:', errorBody);
           } catch (e) {
             console.error('Could not read error body:', e);
           }
 
-          if (collectionsResponse.status === 429) {
-            console.warn('⚠️ Rate limited, waiting longer...');
-            await delay(3000);
-            return [];
-          }
-          throw new Error(`HTTP ${collectionsResponse.status}: ${collectionsResponse.statusText}`);
+          throw new Error(`HTTP ${nftsResponse.status}: ${nftsResponse.statusText}`);
         }
 
-        userCollectionsData = await collectionsResponse.json();
+        const alchemyData = await nftsResponse.json();
+        console.log('✅ Alchemy data received:', alchemyData);
         
-        // Map collections data from the RTP API format
-        const collections = userCollectionsData.collections.map((item: any) => ({
-          contractAddress: item.collection.primaryContract.toLowerCase(),
-          name: item.collection.name,
-          symbol: item.collection.name, // Using name as symbol since symbol isn't provided
-          image: item.collection.image,
-          description: item.collection.description,
-          tokenCount: parseInt(item.ownership.tokenCount, 10),
-          floorPrice: item.collection.floorAskPrice?.amount?.decimal || 0,
-          volumeAll: item.collection.volume?.allTime || 0
-        }));
+        // Group NFTs by contract address to create collections
+        const nftsByContract = new Map();
+        
+        if (alchemyData.nfts && Array.isArray(alchemyData.nfts)) {
+          alchemyData.nfts.forEach((nft: any) => {
+            const contract = nft.contractAddress.toLowerCase();
+            if (!nftsByContract.has(contract)) {
+              nftsByContract.set(contract, {
+                contractAddress: contract,
+                name: nft.name || 'Unknown Collection',
+                symbol: nft.name || '',
+                image: nft.image || '',
+                description: nft.description || '',
+                tokenCount: 0,
+                floorPrice: 0,
+                volumeAll: 0
+              });
+            }
+            const collection = nftsByContract.get(contract);
+            collection.tokenCount += 1;
+          });
+        }
+        
+        const collections = Array.from(nftsByContract.values());
+        console.log(`✅ Grouped into ${collections.length} collections`);
         
         // Cache the response
         apiCache.set(cacheKey, {
           data: collections,
           timestamp: Date.now()
         });
+        
+        userCollectionsData = collections;
       }
       
       // Step 2: Filter locally to find verified collections (instant)
@@ -103,7 +113,7 @@ export function useNFTCollections(address: Address | undefined) {
       
       const verifiedAddresses = VERIFIED_NFTS.map(nft => nft.address.toLowerCase());
       
-      const userVerifiedCollections = collections.filter((item: any) => {
+      const userVerifiedCollections = userCollectionsData.filter((item: any) => {
         const contract = item.contractAddress.toLowerCase();
         return verifiedAddresses.includes(contract);
       });

@@ -34,44 +34,27 @@ export async function getNFTsForCollection(
     const isERC1155 = isERC1155NFT(collectionId);
     console.log(`📋 Contract ${collectionId} is ERC1155: ${isERC1155} (from config)`);
     
-    // Step 2: Fetch from our server-side API
-    const response = await fetch(`/api/user-collections?wallet=${walletAddress}`);
+    // Step 2: Fetch from Alchemy API
+    console.log(`🔥 Fetching from Alchemy API for wallet ${walletAddress}, contract ${collectionId}`);
+    const response = await fetch(`/api/alchemy-nfts?wallet=${walletAddress}&contract=${collectionId}`);
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Alchemy API error:', response.status, errorText);
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-    const collectionsData = await response.json();
+    const alchemyData = await response.json();
+    console.log('✅ Alchemy response:', alchemyData);
     
-    // Find the specific collection
-    const collectionData = collectionsData.collections.find(
-      (item: any) => item.collection.primaryContract.toLowerCase() === collectionId.toLowerCase()
-    );
-    
-    if (!collectionData) {
+    if (!alchemyData.tokens || alchemyData.tokens.length === 0) {
+      console.log('⚠️ No NFTs found for this contract');
       return { tokens: [] };
     }
     
     // Convert to expected format
     const mediaOverride = VERIFIED_NFTS.find(v => v.address.toLowerCase() === collectionId.toLowerCase())?.mediaOverride || '';
-    const mockResponse = {
-      tokens: [{
-        token: {
-          tokenId: "collection",
-          name: collectionData.collection.name,
-          description: collectionData.collection.description,
-          image: collectionData.collection.image,
-          contract: collectionId,
-          collection: {
-            floorAskPrice: collectionData.collection.floorAskPrice?.amount?.native || 0
-          }
-        },
-        ownership: {
-          tokenCount: collectionData.ownership.tokenCount
-        }
-      }]
-    };
     
-    // Step 3: Process tokens with fast API-only approach (no blockchain calls)
-    const tokens = mockResponse.tokens.map((item) => {
+    // Step 3: Process tokens from Alchemy
+    const tokens = alchemyData.tokens.map((item: any) => {
       const floorPrice = (item.token.collection?.floorAskPrice || 0) / 1000;
       const tokenCount = item.ownership?.tokenCount || "1";
       
