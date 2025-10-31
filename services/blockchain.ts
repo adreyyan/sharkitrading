@@ -804,8 +804,8 @@ export async function acceptTrade(tradeId: string, walletClient: any, progressCa
     console.log('  Status:', trade.status);
     console.log('  Offered Receipt IDs:', trade.offeredReceiptIds);
     console.log('  Requested Receipt IDs:', trade.requestedReceiptIds);
-    console.log('  Offered ETH:', ethers.formatEther(trade.offeredETH || 0n));
-    console.log('  Requested ETH:', ethers.formatEther(trade.requestedETH || 0n));
+    console.log('  Offered ETH:', ethers.formatEther(trade.offeredETH || BigInt(0)));
+    console.log('  Requested ETH:', ethers.formatEther(trade.requestedETH || BigInt(0)));
     
     // 🚨 DEBUG: Check if counterparty owns the requested receipts
     console.log('\n🔍 CHECKING RECEIPT OWNERSHIP...');
