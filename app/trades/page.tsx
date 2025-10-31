@@ -105,8 +105,8 @@ function TradeCard({ trade }: { trade: TradeProposal }) {
                   {nft.name || `NFT #${nft.tokenId}`}
                 </p>
               ))}
-              {parseFloat(trade.offeredMonad || '0') > 0 && (
-                <p className="text-sm">{trade.offeredMonad} Mon</p>
+              {parseFloat(trade.offeredETH || '0') > 0 && (
+                <p className="text-sm">{trade.offeredETH} Mon</p>
               )}
             </div>
           </div>
@@ -118,8 +118,8 @@ function TradeCard({ trade }: { trade: TradeProposal }) {
                   {nft.name || `NFT #${nft.tokenId}`}
                 </p>
               ))}
-              {parseFloat(trade.requestedMonad || '0') > 0 && (
-                <p className="text-sm">{trade.requestedMonad} Mon</p>
+              {parseFloat(trade.requestedETH || '0') > 0 && (
+                <p className="text-sm">{trade.requestedETH} Mon</p>
               )}
             </div>
           </div>
