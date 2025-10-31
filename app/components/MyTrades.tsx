@@ -269,23 +269,15 @@ export default function MyTrades({ className = '', variant = 'button' }: MyTrade
       }
 
       // Fetch full trade details from blockchain
-      const [trade, offeredNFTs, requestedNFTs] = await Promise.all([
-        publicClient.readContract({
-          ...contract,
-          functionName: 'getTrade',
-          args: [BigInt(tradeId)]
-        }),
-        publicClient.readContract({
-          ...contract,
-          functionName: 'getOfferedNFTs',
-          args: [BigInt(tradeId)]
-        }),
-        publicClient.readContract({
-          ...contract,
-          functionName: 'getRequestedNFTs',
-          args: [BigInt(tradeId)]
-        })
-      ])
+      const trade = await publicClient.readContract({
+        ...contract,
+        functionName: 'getTrade',
+        args: [BigInt(tradeId)]
+      })
+
+      // New V1 contract stores receipt IDs in the trade object
+      const offeredNFTs = trade.offeredReceiptIds || []
+      const requestedNFTs = trade.requestedReceiptIds || []
 
       console.log('Trade details:', { trade, offeredNFTs, requestedNFTs })
 
