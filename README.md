@@ -42,6 +42,25 @@ Think **Steam trading for NFTs** - but with cryptographic privacy guarantees on 
 
 ---
 
+## 🤝 Trading Interface
+
+<div align="center">
+
+![Trading Interface](./assets/trading-ui.png)
+*Peer-to-peer trading interface - trade vault receipts without revealing NFT contents to the public*
+
+### Key Features Shown:
+- 🔐 **Vault Receipts Trading**: Select encrypted receipts to offer in trades
+- 🎭 **Privacy Preserved**: Token IDs remain hidden during trading (shows "🔐 Private")
+- 🤝 **P2P Negotiation**: Enter counterparty address and propose direct trades
+- 📦 **Dual Inventory View**: See your items and request specific receipts from counterparty
+- 💰 **ETH Support**: Include ETH in offers alongside encrypted NFT receipts
+- 🔗 **Shareable Trade Links**: Send trade proposals via unique URLs
+
+</div>
+
+---
+
 ## ✨ Features
 
 * **🔒 Private NFT Vault**: Deposit NFTs into an encrypted vault where all details (contract, token ID, amount) are stored as encrypted ciphertext on-chain
